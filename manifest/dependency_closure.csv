@@ -1,5 +1,6 @@
 path,source
 run_online_smoke_v4.m,code
+run_online_all_v4.m,code
 run_online_full_v4.m,code
 run_online_adaptive_v4.m,code
 run_phase_e_3scheme_csi_grid.m,code
