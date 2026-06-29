@@ -1,0 +1,10 @@
+# MATLAB Online generated outputs
+results/online_runs/
+results/**/*.mat
+!results_seed/**/*.mat
+
+# MATLAB / OS noise
+*.asv
+*.fig
+*.log
+.DS_Store

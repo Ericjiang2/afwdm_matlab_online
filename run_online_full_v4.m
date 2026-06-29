@@ -1,0 +1,104 @@
+% run_online_full_v4.m
+% MATLAB Online full-load v4 runner.
+%
+% Outputs are isolated under:
+%   results/online_runs/<online_run_id>/
+
+clear; clc;
+online_runner = 'run_online_full_v4.m';
+if ~exist('online_run_id', 'var') || isempty(online_run_id)
+    online_run_id = ['online_full_' datestr(now, 'yyyymmdd_HHMMSS')];
+end
+setup_online_paths();
+write_online_run_note(online_run_id, online_runner);
+
+online_run_root = fullfile('results', 'online_runs', online_run_id);
+if ~exist(online_run_root, 'dir'); mkdir(online_run_root); end
+
+fprintf('\n============================================================\n');
+fprintf(' MATLAB Online full v4 refresh\n');
+fprintf(' run_id: %s\n', online_run_id);
+fprintf(' Targets: ISO/vMF full BER + capacity; fixed_var skipped\n');
+fprintf('============================================================\n');
+
+pas_config        = '2cluster';
+disable_prop_mask = true;
+use_perpath_sigma = true;
+adapt_power_floor = 0.10;
+channel_norm_mode = 'mrms';
+
+numFrames_default = 35;
+SNR_list          = -5:5:15;
+kappa_list        = [0, 0.1, 1.0];
+strategies_sel    = {'full'};
+solver_sel        = 'direct';
+csi_error_mode    = 'snr_coupled';
+out_dir_override  = fullfile(online_run_root, 'phase_e_v4_papersnr_perpath_nomask');
+
+fprintf('\n[BER 1/3] ISO full\n');
+pas_list = {'isotropic'};
+run('run_phase_e_3scheme_csi_grid.m');
+
+fprintf('\n[BER 2/3] vMF cv=0.10 full\n');
+pas_list = {'vmf'};
+cv = 0.10;
+run('run_phase_e_3scheme_csi_grid.m');
+
+fprintf('\n[BER 3/3] vMF cv=0.30 full\n');
+pas_list = {'vmf'};
+cv = 0.30;
+run('run_phase_e_3scheme_csi_grid.m');
+
+fprintf('\n[CAP] vMF capacity full sweep\n');
+clear out_dir_override pas_list cv;
+online_runner     = 'run_online_full_v4.m';
+pas_config        = '2cluster';
+disable_prop_mask = true;
+use_perpath_sigma = true;
+channel_norm_mode = 'mrms';
+cap_out_tag       = '_v4_paper';
+cap_out_dir_override = fullfile(online_run_root, 'phase_d3_capacity_3scheme_v4_paper');
+cluster_var_list  = [0.01, 0.30, 1.00];
+P_dBW_list        = 0:5:30;
+sigma2_fixed      = 1;
+numFrames_per_pt  = 30;
+USE_PARFOR        = true;
+NUM_WORKERS       = 6;
+strategies        = {'full'};
+
+run('run_capacity_full_3scheme.m');
+
+fprintf('\nFull v4 online run done. Download: %s\n', online_run_root);
+
+function setup_online_paths()
+    root = fileparts(mfilename('fullpath'));
+    addpath(root);
+    addpath(fullfile(root, 'tools'));
+    addpath(genpath(fullfile(root, 'variance')));
+    addpath(genpath(fullfile(root, 'variance_aniso')));
+    if exist(fullfile(root, '方差计算'), 'dir'); addpath(genpath(fullfile(root, '方差计算'))); end
+end
+
+function write_online_run_note(run_id, runner)
+    run_root = fullfile('results', 'online_runs', run_id);
+    if ~exist(run_root, 'dir'); mkdir(run_root); end
+    commit = read_commit_marker();
+    fid = fopen(fullfile(run_root, 'RUN_INFO.txt'), 'w');
+    fprintf(fid, 'run_id=%s\nrunner=%s\nstarted_at=%s\ngit_commit=%s\n', ...
+        run_id, runner, datestr(now, 31), commit);
+    fclose(fid);
+end
+
+function commit = read_commit_marker()
+    commit = 'unknown';
+    pc = fullfile(pwd, '.provenance_commit');
+    if exist(pc, 'file')
+        fid = fopen(pc, 'r');
+        if fid > 0
+            line = strtrim(fgetl(fid)); fclose(fid);
+            if ischar(line) && ~isempty(line); commit = line; return; end
+        end
+    end
+    [s, out] = system('git rev-parse HEAD 2>nul');
+    if s == 0; commit = strtrim(out); end
+end
