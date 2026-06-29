@@ -45,4 +45,5 @@ variance_aniso/function_channelPAS.m
 variance_aniso/function_channelVAR.m
 variance_aniso/function_channelVAR_element.m
 variance_aniso/function_computeInt_nonIso.m
+ONLINE_CHANGELOG.md
 .provenance_commit

@@ -46,4 +46,5 @@ variance_aniso/function_channelPAS.m,code
 variance_aniso/function_channelVAR.m,code
 variance_aniso/function_channelVAR_element.m,code
 variance_aniso/function_computeInt_nonIso.m,code
+ONLINE_CHANGELOG.md,code
 .provenance_commit,generated_commit_marker

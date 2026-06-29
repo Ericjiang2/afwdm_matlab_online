@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-06-29T15:48:56Z",
+  "generated_at_utc": "2026-06-29T15:52:30Z",
   "git_commit": "348a43efc597f850a00e70481cbcee9f81a4ba86",
   "git_branch": "codex-agent-memory-sync",
   "dirty_status": [
@@ -28,6 +28,7 @@
     "?? diag_tilt_effect.m",
     "?? docs/2026-05-30_1D-DFT_vs_AFWDM.pdf",
     "?? docs/Atlas_Result_Report_2026-06-18.md",
+    "?? docs/Matlab_Online_Repo_Log.md",
     "?? docs/explainer_deff_eta_capacity.html",
     "?? docs/explainer_imperfect_csi_two_modes.html",
     "?? docs/explainer_spectral_efficiency_eta.html",
