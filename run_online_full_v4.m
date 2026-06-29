@@ -62,8 +62,8 @@ cluster_var_list  = [0.01, 0.30, 1.00];
 P_dBW_list        = 0:5:30;
 sigma2_fixed      = 1;
 numFrames_per_pt  = 30;
-USE_PARFOR        = true;
-NUM_WORKERS       = 6;
+USE_PARFOR        = false;
+NUM_WORKERS       = 1;
 strategies        = {'full'};
 
 run('run_capacity_full_3scheme.m');

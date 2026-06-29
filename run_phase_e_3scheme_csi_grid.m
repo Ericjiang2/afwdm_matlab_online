@@ -11,7 +11,7 @@
 %
 % workspace override: pas_list / cv / SNR_list / numFrames_default / kappa_list / strategies_sel
 
-clearvars -except SNR_list numFrames_default kappa_list pas_list cv strategies_sel solver_sel csi_error_mode disable_prop_mask use_perpath_sigma pas_config out_dir_override adapt_power_floor channel_norm_mode verify_diagnosis_only online_run_id online_runner online_run_root; clc;
+clearvars -except SNR_list numFrames_default kappa_list pas_list cv strategies_sel solver_sel csi_error_mode disable_prop_mask use_perpath_sigma pas_config out_dir_override adapt_power_floor channel_norm_mode verify_diagnosis_only online_run_id online_runner online_run_root phase_e_use_parfor; clc;
 addpath('tools');
 warning('off', 'svd_precoder_from_G:RankDeficient');
 
@@ -23,30 +23,39 @@ if ~exist('solver_sel','var');        solver_sel = 'direct'; end  % direct 实�
 if ~exist('csi_error_mode','var');    csi_error_mode = 'snr_coupled'; end  % 'snr_coupled'(默认,导频估计NMSE=κ/SNR) | 'fixed_var'(直接调每元素方差σ²_e)
 if ~exist('use_perpath_sigma','var')||isempty(use_perpath_sigma); use_perpath_sigma = true; end
 if ~exist('verify_diagnosis_only','var')||isempty(verify_diagnosis_only); verify_diagnosis_only = false; end
+if ~exist('phase_e_use_parfor','var')||isempty(phase_e_use_parfor)
+    phase_e_use_parfor = ~(exist('online_run_id','var') && ~isempty(online_run_id));
+end
 
 % ---- parpool (复用现有池, 不 delete 重建; 无池才创建) ----
 parpool_workers = 0;
-pool = gcp('nocreate');
-if ~isempty(pool)
-    parpool_workers = pool.NumWorkers;
-    fprintf('[parpool] 复用现有池 workers=%d\n', parpool_workers);
+if ~phase_e_use_parfor
+    fprintf('[parpool] disabled; running serial (MATLAB Online safe)\n');
 else
-    try
-        p = parpool('Processes', 6); parpool_workers = p.NumWorkers;
-        fprintf('[parpool] 新建 workers=%d\n', parpool_workers);
-    catch
-        try; p = parpool('Processes', 3); parpool_workers = p.NumWorkers;
-            fprintf('[parpool] 新建 workers=%d (3w)\n', parpool_workers);
-        catch; fprintf('[parpool] serial\n'); end
+    pool = gcp('nocreate');
+    if ~isempty(pool)
+        parpool_workers = pool.NumWorkers;
+        fprintf('[parpool] 复用现有池 workers=%d\n', parpool_workers);
+    else
+        try
+            p = parpool('Processes', 6); parpool_workers = p.NumWorkers;
+            fprintf('[parpool] 新建 workers=%d\n', parpool_workers);
+        catch
+            try; p = parpool('Processes', 3); parpool_workers = p.NumWorkers;
+                fprintf('[parpool] 新建 workers=%d (3w)\n', parpool_workers);
+            catch; fprintf('[parpool] unavailable; running serial loop\n'); phase_e_use_parfor=false; end
+        end
     end
-end
-pool = gcp('nocreate');
-if ~isempty(pool)
-    try
-        f = parfevalOnAll(@() warning('off', 'svd_precoder_from_G:RankDeficient'), 0);
-        wait(f);
-    catch ME
-        fprintf('[parpool] RankDeficient warning worker silence skipped: %s\n', ME.message);
+    if phase_e_use_parfor
+        pool = gcp('nocreate');
+        if ~isempty(pool)
+            try
+                f = parfevalOnAll(@() warning('off', 'svd_precoder_from_G:RankDeficient'), 0);
+                wait(f);
+            catch ME
+                fprintf('[parpool] RankDeficient warning worker silence skipped: %s\n', ME.message);
+            end
+        end
     end
 end
 
@@ -154,38 +163,20 @@ for iPas = 1:numel(pas_list)
             err_per = zeros(numFrames_default, 3, nK);   % [frm, scheme, kappa]
             tot_per = zeros(numFrames_default, 3, nK);
 
-            parfor frm = 1:numFrames_default
-                seed_base = 1000 * frm;
-                [tau_vec, nu_vec, ~, ~, theta_s, phi_s, theta_r, phi_r] = ...
-                    generate_phys_dd_paths(cfg_base, Lch, seed_base);
-                H_phys = cell(1, Lch);
-                for ell = 1:Lch
-                    % paper Eq.31 phase Gamma global (unitary) -> drop per-path tilt; direction in Sigma_p
-                    H_phys{ell}=beamspace_apd_channel_2d_perpath(Mr,Ms,Sig_taps{ell},Dr,Ds, ...
-                    seed_base+ell, Ur_full, Us_full, ones(Ms,1), ones(Mr,1));
+            if phase_e_use_parfor
+                parfor frm = 1:numFrames_default
+                    [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
+                        Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
+                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK);
+                    err_per(frm,:,:) = e_loc; tot_per(frm,:,:) = t_loc;
                 end
-                e_loc=zeros(3,nK); t_loc=zeros(3,nK);
-                for iK = 1:nK
-                    rng(seed_base*100 + iK*7919);
-                    H_hat = inject_csi_error(H_phys, kappa_list(iK), 10^(SNR_dB/10), Mr, Ms, Lch, csi_error_mode);
-                    % per-frame SVD precoder (channel-aware, on H_hat)
-                    G_hat = build_G_paper_eq31(H_hat, 'sum_taps');
-                    [W_s_svd, W_r_svd, ~] = svd_precoder_from_G(G_hat, N_s, N_s);
-                    Us_set = {Us_afwdm, W_s_dft, W_s_svd};
-                    Ur_set = {Ur_afwdm, W_r_dft, W_r_svd};
-                    for k = 1:3
-                        cfg_k = cfg_base;
-                        cfg_k.Us=Us_set{k}; cfg_k.Ur=Ur_set{k};
-                        cfg_k.ms=N_s; cfg_k.mr=N_s; cfg_k.Nstreams=N_s;
-                        cfg_k.Wbb_wdm=[]; cfg_k.Wbb_sdm=[]; cfg_k.Fbb_wdm=[]; cfg_k.Fbb_sdm=[];
-                        cfg_k.block_lmmse_solver=solver_sel;
-                        Hr = build_block_matrix_afwdm(H_phys, tau_vec, nu_vec, cfg_k);
-                        Hd = build_block_matrix_afwdm(H_hat,  tau_vec, nu_vec, cfg_k);
-                        [e,b] = simulate_imperfect_csi_block(cfg_k, Hr, Hd, QAM_order, SNR_dB);
-                        e_loc(k,iK)=e; t_loc(k,iK)=b;
-                    end
+            else
+                for frm = 1:numFrames_default
+                    [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
+                        Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
+                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK);
+                    err_per(frm,:,:) = e_loc; tot_per(frm,:,:) = t_loc;
                 end
-                err_per(frm,:,:) = e_loc; tot_per(frm,:,:) = t_loc;
             end
 
             err = squeeze(sum(err_per,1)); tot = squeeze(sum(tot_per,1));   % [3, nK]
@@ -243,4 +234,39 @@ fprintf('\n========== Phase E done ==========\n  out_dir: %s\n', out_dir);
 function tilt=build_tilt_vec(Mx,My,dx,dy,kx,ky)
     M=Mx*My; n=(0:M-1).'; ux=mod(n,Mx); uy=floor(n/Mx);
     tilt=exp(1j*2*pi*(dx*kx*ux+dy*ky*uy));
+end
+
+function [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
+        Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
+        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK)
+    seed_base = 1000 * frm;
+    [tau_vec, nu_vec, ~, ~, theta_s, phi_s, theta_r, phi_r] = ...
+        generate_phys_dd_paths(cfg_base, Lch, seed_base);
+    H_phys = cell(1, Lch);
+    for ell = 1:Lch
+        % paper Eq.31 phase Gamma global (unitary) -> drop per-path tilt; direction in Sigma_p
+        H_phys{ell}=beamspace_apd_channel_2d_perpath(Mr,Ms,Sig_taps{ell},Dr,Ds, ...
+        seed_base+ell, Ur_full, Us_full, ones(Ms,1), ones(Mr,1));
+    end
+    e_loc=zeros(3,nK); t_loc=zeros(3,nK);
+    for iK = 1:nK
+        rng(seed_base*100 + iK*7919);
+        H_hat = inject_csi_error(H_phys, kappa_list(iK), 10^(SNR_dB/10), Mr, Ms, Lch, csi_error_mode);
+        % per-frame SVD precoder (channel-aware, on H_hat)
+        G_hat = build_G_paper_eq31(H_hat, 'sum_taps');
+        [W_s_svd, W_r_svd, ~] = svd_precoder_from_G(G_hat, N_s, N_s);
+        Us_set = {Us_afwdm, W_s_dft, W_s_svd};
+        Ur_set = {Ur_afwdm, W_r_dft, W_r_svd};
+        for k = 1:3
+            cfg_k = cfg_base;
+            cfg_k.Us=Us_set{k}; cfg_k.Ur=Ur_set{k};
+            cfg_k.ms=N_s; cfg_k.mr=N_s; cfg_k.Nstreams=N_s;
+            cfg_k.Wbb_wdm=[]; cfg_k.Wbb_sdm=[]; cfg_k.Fbb_wdm=[]; cfg_k.Fbb_sdm=[];
+            cfg_k.block_lmmse_solver=solver_sel;
+            Hr = build_block_matrix_afwdm(H_phys, tau_vec, nu_vec, cfg_k);
+            Hd = build_block_matrix_afwdm(H_hat,  tau_vec, nu_vec, cfg_k);
+            [e,b] = simulate_imperfect_csi_block(cfg_k, Hr, Hd, QAM_order, SNR_dB);
+            e_loc(k,iK)=e; t_loc(k,iK)=b;
+        end
+    end
 end
