@@ -23,6 +23,33 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260630-02] ISO Perfect/Full High-SNR Audit Runner
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Added `run_online_iso_perfect_full_audit_v4.m`.
+- First-round audit plan is 5 dB/20 frames, 10 dB/150 frames, and
+  15 dB/350 frames.
+- Each SNR point writes to its own subdirectory under
+  `results/online_runs/<run_id>/iso_perfect_full_highsnr_audit/`.
+- `run_phase_e_3scheme_csi_grid.m` now accepts `frame_start_offset`, records it
+  in result metadata, and uses it in frame seeding so continuation batches can
+  avoid repeated samples.
+
+**Why**:
+- The timing smoke showed about 13.28 s per frame/SNR. The audit should collect
+  enough errors at 10 dB and a useful zero-error upper bound at 15 dB without
+  immediately jumping to 1000+ frames.
+
+**Expected effect**:
+- `run('run_online_iso_perfect_full_audit_v4.m')` produces
+  `AUDIT_PLAN_SUMMARY.txt` with BER, estimated bit errors, elapsed time, and
+  zero-error 95% upper bounds for AFWDM/DFT/SVD.
+
+**Result**:
+- Pending MATLAB Online run and push.
+
 ### [online-20260630-01] ISO Perfect/Full Timing Smoke
 
 **Commit**: `92d233f`

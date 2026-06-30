@@ -11,12 +11,13 @@
 %
 % workspace override: pas_list / cv / SNR_list / numFrames_default / kappa_list / strategies_sel
 
-clearvars -except SNR_list numFrames_default kappa_list pas_list cv strategies_sel solver_sel csi_error_mode disable_prop_mask use_perpath_sigma pas_config out_dir_override adapt_power_floor channel_norm_mode verify_diagnosis_only online_run_id online_runner online_run_root phase_e_use_parfor; clc;
+clearvars -except SNR_list numFrames_default frame_start_offset kappa_list pas_list cv strategies_sel solver_sel csi_error_mode disable_prop_mask use_perpath_sigma pas_config out_dir_override adapt_power_floor channel_norm_mode verify_diagnosis_only online_run_id online_runner online_run_root phase_e_use_parfor; clc;
 addpath('tools');
 warning('off', 'svd_precoder_from_G:RankDeficient');
 
 if ~exist('SNR_list','var');          SNR_list = 0:5:25; end
 if ~exist('numFrames_default','var'); numFrames_default = 50; end
+if ~exist('frame_start_offset','var')||isempty(frame_start_offset); frame_start_offset = 0; end
 if ~exist('kappa_list','var');        kappa_list = [0, 0.1, 1.0]; end
 if ~exist('strategies_sel','var');    strategies_sel = {'full'}; end
 if ~exist('solver_sel','var');        solver_sel = 'direct'; end  % direct 实测更快且精确(91.7s vs pcg 115.4s)
@@ -167,14 +168,14 @@ for iPas = 1:numel(pas_list)
                 parfor frm = 1:numFrames_default
                     [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
                         Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
-                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK);
+                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK, frame_start_offset);
                     err_per(frm,:,:) = e_loc; tot_per(frm,:,:) = t_loc;
                 end
             else
                 for frm = 1:numFrames_default
                     [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
                         Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
-                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK);
+                        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK, frame_start_offset);
                     err_per(frm,:,:) = e_loc; tot_per(frm,:,:) = t_loc;
                 end
             end
@@ -197,6 +198,7 @@ for iPas = 1:numel(pas_list)
     results.schemes=schemes; results.strategies=strategies_sel;
     results.BER=BER;                       % [scheme, strategy, SNR, kappa]
     results.pas=this_pas; results.cv=cv_tag; results.d_eff=d_eff; results.Ns_used=Ns_used;
+    results.frame_start_offset = frame_start_offset;
     if numel(strategies_sel) == 1 && ischar(strategies_sel{1}) && strcmp(strategies_sel{1}, 'full')
         stream_strategy = 'paper_full_load';
     else
@@ -219,7 +221,7 @@ for iPas = 1:numel(pas_list)
         'strategies',{strategies_sel},'solver',solver_sel,'csi_error_mode',csi_error_mode, ...
         'snr_definition','per_symbol_unit_qam','paper_channel_scaling','sqrt_MrMs_sigma_p_no_frame_norm', ...
         'sigma_mass_sum',sigma_mass_sum,'use_perpath_sigma',use_perpath_for_this_run, ...
-        'stream_strategy',stream_strategy);
+        'stream_strategy',stream_strategy,'frame_start_offset',frame_start_offset);
     if exist('online_run_id','var') && ~isempty(online_run_id); switches.online_run_id=online_run_id; end
     if exist('online_runner','var') && ~isempty(online_runner); switches.online_runner=online_runner; end
     if strcmp(this_pas,'vmf'); combo_id=sprintf('E_vmf_cv%03d',round(cv_tag*100)); else; combo_id='E_isotropic'; end
@@ -238,8 +240,8 @@ end
 
 function [e_loc, t_loc] = run_one_frame_phase_e(frm, cfg_base, Lch, Sig_taps, Dr, Ds, ...
         Mr, Ms, Ur_full, Us_full, kappa_list, SNR_dB, csi_error_mode, ...
-        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK)
-    seed_base = 1000 * frm;
+        Us_afwdm, Ur_afwdm, W_s_dft, W_r_dft, N_s, solver_sel, QAM_order, nK, frame_start_offset)
+    seed_base = 1000 * (frame_start_offset + frm);
     [tau_vec, nu_vec, ~, ~, theta_s, phi_s, theta_r, phi_r] = ...
         generate_phys_dd_paths(cfg_base, Lch, seed_base);
     H_phys = cell(1, Lch);
