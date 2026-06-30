@@ -36,11 +36,12 @@ fprintf(' plan: [SNR_dB, frames, frame_start_offset]\n');
 disp(audit_plan);
 fprintf('============================================================\n');
 
-records = struct([]);
+records_cell = cell(1, size(audit_plan, 1));
 for ii = 1:size(audit_plan, 1)
-    records(ii) = run_one_snr_audit(online_run_id, online_run_root, online_runner, ...
-        audit_root, audit_plan(ii, 1), audit_plan(ii, 2), audit_plan(ii, 3)); %#ok<SAGROW>
+    records_cell{ii} = run_one_snr_audit(online_run_id, online_run_root, online_runner, ...
+        audit_root, audit_plan(ii, 1), audit_plan(ii, 2), audit_plan(ii, 3));
 end
+records = [records_cell{:}];
 
 summary_path = fullfile(audit_root, 'AUDIT_PLAN_SUMMARY.txt');
 write_audit_summary(summary_path, records);
@@ -110,6 +111,7 @@ end
 
 function setup_online_paths()
     root = fileparts(mfilename('fullpath'));
+    cd(root);
     addpath(root);
     addpath(fullfile(root, 'tools'));
     addpath(genpath(fullfile(root, 'variance')));

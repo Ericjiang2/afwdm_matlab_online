@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260630-02] ISO Perfect/Full High-SNR Audit Runner
 
-**Commit**: `2ac447b`
+**Commit**: `2ac447b`; follow-up audit fix in this commit
 
 **Changed**:
 - Added `run_online_iso_perfect_full_audit_v4.m`.
@@ -36,6 +36,13 @@ without duplicating long notes everywhere.
 - `run_phase_e_3scheme_csi_grid.m` now accepts `frame_start_offset`, records it
   in result metadata, and uses it in frame seeding so continuation batches can
   avoid repeated samples.
+- Follow-up fix: `run_online_iso_perfect_full_audit_v4.m` stores per-SNR
+  records in cells before concatenation, avoiding MATLAB's "subscripted
+  assignment between dissimilar structures" error when record fields differ
+  across runs.
+- Follow-up fix: online runners `cd` to the repository root, and
+  `run_phase_e_3scheme_csi_grid.m` adds `tools/` from the script root instead
+  of the current working directory.
 
 **Why**:
 - The timing smoke showed about 13.28 s per frame/SNR. The audit should collect
@@ -48,7 +55,10 @@ without duplicating long notes everywhere.
   zero-error 95% upper bounds for AFWDM/DFT/SVD.
 
 **Result**:
-- Local commit `2ac447b`; MATLAB Online run and push pending.
+- Pushed initial audit runner at `2ac447b`. MATLAB Online exposed two runner
+  robustness issues: stale current folder made `tools/` path relative to an old
+  result directory, and direct struct-array assignment failed for dissimilar
+  records. Follow-up fix is recorded in this commit.
 
 ### [online-20260630-01] ISO Perfect/Full Timing Smoke
 

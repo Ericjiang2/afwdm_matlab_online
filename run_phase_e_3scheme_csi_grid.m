@@ -12,7 +12,8 @@
 % workspace override: pas_list / cv / SNR_list / numFrames_default / kappa_list / strategies_sel
 
 clearvars -except SNR_list numFrames_default frame_start_offset kappa_list pas_list cv strategies_sel solver_sel csi_error_mode disable_prop_mask use_perpath_sigma pas_config out_dir_override adapt_power_floor channel_norm_mode verify_diagnosis_only online_run_id online_runner online_run_root phase_e_use_parfor; clc;
-addpath('tools');
+script_root = fileparts(mfilename('fullpath'));
+addpath(fullfile(script_root, 'tools'));
 warning('off', 'svd_precoder_from_G:RankDeficient');
 
 if ~exist('SNR_list','var');          SNR_list = 0:5:25; end
