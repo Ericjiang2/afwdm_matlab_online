@@ -44,9 +44,9 @@ out_dir_override  = smoke_out_dir;
 pas_list          = {'isotropic'};
 QAM_order         = 4;
 
-t_smoke = tic;
+tic;
 run('run_phase_e_3scheme_csi_grid.m');
-elapsed_sec = toc(t_smoke);
+elapsed_sec = toc;
 
 result_file = fullfile(smoke_out_dir, ...
     'E_isotropic_phase_e_v4_paper_SNR_3scheme_pas_isotropic_cv_1_00_d_eff_60_8x8.mat');
