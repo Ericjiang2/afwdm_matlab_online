@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260630-02] ISO Perfect/Full High-SNR Audit Runner
 
-**Commit**: `<PENDING>`
+**Commit**: `2ac447b`
 
 **Changed**:
 - Added `run_online_iso_perfect_full_audit_v4.m`.
@@ -48,7 +48,7 @@ without duplicating long notes everywhere.
   zero-error 95% upper bounds for AFWDM/DFT/SVD.
 
 **Result**:
-- Pending MATLAB Online run and push.
+- Local commit `2ac447b`; MATLAB Online run and push pending.
 
 ### [online-20260630-01] ISO Perfect/Full Timing Smoke
 
