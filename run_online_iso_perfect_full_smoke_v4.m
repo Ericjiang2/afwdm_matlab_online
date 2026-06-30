@@ -48,6 +48,8 @@ tic;
 run('run_phase_e_3scheme_csi_grid.m');
 elapsed_sec = toc;
 
+smoke_out_dir = out_dir_override;
+qam_order_smoke = 4;
 result_file = fullfile(smoke_out_dir, ...
     'E_isotropic_phase_e_v4_paper_SNR_3scheme_pas_isotropic_cv_1_00_d_eff_60_8x8.mat');
 if ~exist(result_file, 'file')
@@ -57,7 +59,7 @@ end
 S = load(result_file, 'results', 'cfg', 'switches');
 ber = squeeze(S.results.BER(:, 1, :, 1));  % [scheme, SNR] for full/kappa=0
 if isvector(ber); ber = reshape(ber, [], numel(SNR_list)); end
-bits_per_point = S.cfg.Nblk * S.results.Ns_used(1) * log2(QAM_order) * numFrames_default;
+bits_per_point = S.cfg.Nblk * S.results.Ns_used(1) * log2(qam_order_smoke) * numFrames_default;
 err_est = round(ber * bits_per_point);
 sec_per_frame_snr = elapsed_sec / (numFrames_default * numel(SNR_list));
 
