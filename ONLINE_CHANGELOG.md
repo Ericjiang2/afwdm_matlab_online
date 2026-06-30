@@ -2,21 +2,51 @@
 
 This document is the lightweight change/provenance log for the standalone
 `afwdm_matlab_online` repository. It records what changed, why it changed,
-the expected effect, and the observed result. The source of truth is this file
-in the main project; `tools/prepare_matlab_online_bundle.py` copies it to the
-online repo root as `ONLINE_CHANGELOG.md`.
+the expected effect, and the observed result. For MATLAB Online-only edits,
+this file is the preferred log. The main research repo keeps only a compact
+mirror/index at `docs/Matlab_Online_Repo_Log.md` so the two repos stay linked
+without duplicating long notes everywhere.
 
 ## Current Workflow
 
 - Main research repo remains local and is not pushed to the online GitHub repo.
 - `tools/prepare_matlab_online_bundle.py` refreshes `matlab_online_repo/`.
 - `matlab_online_repo/` is the only repository pushed to GitHub.
+- MATLAB Online-only edits are logged first in this file.
+- Main-repo `docs/Matlab_Online_Repo_Log.md` is a compact mirror/pointer; main
+  `docs/Code_Changes.md` is used only when the online change also affects main
+  wrappers, bundling/import tools, or experiment semantics.
 - MATLAB Online users should run `run_online_smoke_v4.m` first, then
   `run_online_all_v4.m` for a resumable full queue.
 - Results are downloaded as `results/online_runs/<run_id>/` and imported into
   the main project with `tools/import_online_results.py`.
 
 ## Entries
+
+### [online-20260630-01] ISO Perfect/Full Timing Smoke
+
+**Commit**: `92d233f`
+
+**Changed**:
+- Added `run_online_iso_perfect_full_smoke_v4.m`.
+- Scope is intentionally narrow: ISO, perfect CSI (`kappa=0`), full-load,
+  `SNR=[5 10 15]`, one serial frame per SNR.
+- Fixed two runner issues caused by `run_phase_e_3scheme_csi_grid.m`
+  clearing caller variables: switched timing to plain `tic/toc` and rebuilt
+  the summary output path from preserved `out_dir_override`.
+
+**Why**:
+- The high-SNR ISO perfect/full BER point has too few bit errors to justify a
+  large claim. A timing smoke is needed before selecting a larger frame budget.
+
+**Expected effect**:
+- MATLAB Online writes `TIMING_SUMMARY.txt` under
+  `results/online_runs/<run_id>/iso_perfect_full_timing_smoke/`, including
+  elapsed time, seconds per frame/SNR, BER, and estimated bit errors.
+
+**Result**:
+- Pushed to GitHub `main` at `92d233f`. Runtime smoke produced the core mat;
+  final summary generation should pass after the `92d233f` fix.
 
 ### [online-20260629-03] Resumable Master Runner
 
