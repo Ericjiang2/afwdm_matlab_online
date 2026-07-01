@@ -1,6 +1,6 @@
 # MATLAB Online Bundle
 
-Generated: 2026-06-29T15:52:30Z
+Generated: 2026-07-01T03:07:28Z
 Commit marker: `348a43efc597f850a00e70481cbcee9f81a4ba86`
 
 ## Recommended Path: Git First
@@ -14,7 +14,7 @@ Commit marker: `348a43efc597f850a00e70481cbcee9f81a4ba86`
 
 ## Fallback Path: Zip Upload
 
-Upload `afwdm_v4_online_20260629_235230.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
+Upload `afwdm_v4_online_20260701_110728.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
 folder, then run the same online runner scripts from there.
 
 ## Results
@@ -37,10 +37,8 @@ mat files, not the full historical `results/` tree.
 ## MATLAB Online Parallel Note
 
 MATLAB Online default sessions do not support the local/processes pools used by
-the old Win runners. Use only `run_online_smoke_v4.m`,
-`run_online_all_v4.m`, `run_online_full_v4.m`, and
-`run_online_adaptive_v4.m` in this repository. Those runners force serial
-execution for Online safety.
+the old Win runners. Use only the `run_online_*.m` runners in this repository.
+Those runners force serial execution for Online safety.
 
 `run_online_all_v4.m` is resumable. It stores the active run id in
 `results/online_runs/_ACTIVE_RUN_ID.txt` and writes per-task checkpoints under

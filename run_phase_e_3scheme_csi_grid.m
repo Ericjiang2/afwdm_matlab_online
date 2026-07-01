@@ -144,6 +144,8 @@ for iPas = 1:numel(pas_list)
 
     schemes={'AFWDM','DFT_precoded','SVD_paper'};
     BER = nan(3, nStrat, nSNR, nK);   % [scheme, strategy, SNR, kappa]
+    err_total = nan(3, nStrat, nSNR, nK);
+    tot_total = nan(3, nStrat, nSNR, nK);
     Ns_used = nan(1, nStrat);
 
     t_loops = tic;
@@ -182,7 +184,9 @@ for iPas = 1:numel(pas_list)
             end
 
             err = squeeze(sum(err_per,1)); tot = squeeze(sum(tot_per,1));   % [3, nK]
-            BER(:,iStrat,iSNR,:) = err ./ max(tot,1);
+            err_total(:,iStrat,iSNR,:) = reshape(err, [3, 1, 1, nK]);
+            tot_total(:,iStrat,iSNR,:) = reshape(tot, [3, 1, 1, nK]);
+            BER(:,iStrat,iSNR,:) = reshape(err ./ max(tot,1), [3, 1, 1, nK]);
             fprintf('  [%s] SNR=%2d: ', st_tag, SNR_dB);
             for iK=1:nK
                 fprintf('κ%.1f[A=%.2e D=%.2e S=%.2e] ', kappa_list(iK), BER(1,iStrat,iSNR,iK), BER(2,iStrat,iSNR,iK), BER(3,iStrat,iSNR,iK));
@@ -198,6 +202,8 @@ for iPas = 1:numel(pas_list)
     results.SNR_dB=SNR_list; results.kappa_list=kappa_list;
     results.schemes=schemes; results.strategies=strategies_sel;
     results.BER=BER;                       % [scheme, strategy, SNR, kappa]
+    results.err_total=err_total;
+    results.tot_total=tot_total;
     results.pas=this_pas; results.cv=cv_tag; results.d_eff=d_eff; results.Ns_used=Ns_used;
     results.frame_start_offset = frame_start_offset;
     if numel(strategies_sel) == 1 && ischar(strategies_sel{1}) && strcmp(strategies_sel{1}, 'full')
