@@ -8,6 +8,10 @@ function cfg_run = make_delivery_config(mode)
 %   cfg_run = make_delivery_config("local2min");
 %   cfg_run = make_delivery_config("paper");
 %   cfg_run = make_delivery_config("paperfig");
+%   cfg_run = make_delivery_config("paperfig_iso");
+%   cfg_run = make_delivery_config("paperfig_vmf");
+%   cfg_run = make_delivery_config("paperfig_capacity");
+%   cfg_run = make_delivery_config("paperfig_low_mimo");
 %
 % 交付版主路线:
 %   - BER: AFWDM / DFT_precoded / SVD_paper
@@ -191,7 +195,7 @@ switch mode
         cfg_run.capacity_scenarios = vmf_capacity_scenarios([0.01, 0.30, 1.00]);
         cfg_run.quick_stream_cap = [];
 
-    case "paperfig"
+    case {"paperfig", "paperfig_iso", "paperfig_vmf", "paperfig_capacity", "paperfig_low_mimo"}
         % 新交付主图模式:
         %   Fig.1 strict isotropic: perfect CSI + fixed_var CSI in one plot.
         %   Fig.2 vMF cv=0.30: same six-line BER plot.
@@ -221,11 +225,35 @@ switch mode
         cfg_run.quick_stream_cap = [];
         cfg_run.run_low_mimo_precoding = true;
 
+        switch mode
+            case "paperfig_iso"
+                cfg_run.ber_scenarios = cfg_run.ber_scenarios(1);
+                cfg_run.run_capacity = false;
+                cfg_run.run_low_mimo_precoding = false;
+            case "paperfig_vmf"
+                cfg_run.ber_scenarios = cfg_run.ber_scenarios(2);
+                cfg_run.run_capacity = false;
+                cfg_run.run_low_mimo_precoding = false;
+            case "paperfig_capacity"
+                cfg_run.ber_scenarios = empty_scenario_list();
+                cfg_run.run_capacity = true;
+                cfg_run.run_low_mimo_precoding = false;
+            case "paperfig_low_mimo"
+                cfg_run.ber_scenarios = empty_scenario_list();
+                cfg_run.run_capacity = false;
+                cfg_run.run_low_mimo_precoding = true;
+        end
+
     otherwise
         error('make_delivery_config:unknownMode', ...
-            'Unknown mode "%s". Use quick, smoke, fullmini, local2min, paper, or paperfig.', mode);
+            ['Unknown mode "%s". Use quick, smoke, fullmini, local2min, paper, ' ...
+             'paperfig, paperfig_iso, paperfig_vmf, paperfig_capacity, or paperfig_low_mimo.'], mode);
 end
 
+end
+
+function specs = empty_scenario_list()
+specs = repmat(struct('label', '', 'pas_model', '', 'cv', NaN, 'use_perpath_sigma', false), 1, 0);
 end
 
 function specs = vmf_capacity_scenarios(cv_list)

@@ -17,6 +17,15 @@ mode = "paperfig";
 run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
 ```
 
+MATLAB Online 推荐断点续跑入口:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
+```
+
+如果浏览器或会话中断，重新运行同一条命令即可。已完成阶段会通过
+`delivery/atlas_v4_matlab/outputs/online_runs/` 下的 checkpoint 跳过。
+
 `quick` 默认只跑最小 BER 流程: `cv=1.0` isotropic-like、perfect CSI、`AFWDM / DFT_precoded / SVD_paper`、`full + adaptive`。这是给 MacBook Air 和课堂解释用的轻量验收模式，所以会临时把 `N_s` cap 到 8；它用于检查流程，不用于报告 atlas 数字。
 
 `smoke` 是信息量稍大的本机验收: 仍然 `N_s` cap 到 8，但跑 `cv=1.0 / 0.30`、`SNR=[0,10]`、`kappa=[0,0.1]`、每点 2 帧，用来检查 CSI、各向异性和多 SNR 维度是否都通。
@@ -42,6 +51,7 @@ run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
 - `select_modes_atlas_v4.m`: 最新 atlas v4 overlap/nomask 模式选择，含 `full` 和 `adaptive`。
 - `select_modes_main_eq45_reference.m`: main.pdf Eq.(4)-(5) strict center ellipse 对照代码，默认不用。
 - `run_delivery_capacity.m`: 可选 capacity helper。
+- `run_delivery_online_resumable.m`: MATLAB Online 断点续跑 wrapper，按四张主图分阶段保存。
 - `plot_delivery_results.m`: 保存 `.png`。
 - `pilot_demo_embedded_channel_estimation.m`: 独立 pilot 原型，不进入四张主图。
 
