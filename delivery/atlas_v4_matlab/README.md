@@ -1,0 +1,66 @@
+# Atlas v4 MATLAB Delivery Code
+
+这是一套干净交付版 MATLAB 入口，用来向老师解释最新 atlas v4 结果是怎么从代码跑出来的。
+
+主入口:
+
+```matlab
+mode = "quick";
+run_capacity = false;
+run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
+```
+
+当前建议主图入口:
+
+```matlab
+mode = "paperfig";
+run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
+```
+
+`quick` 默认只跑最小 BER 流程: `cv=1.0` isotropic-like、perfect CSI、`AFWDM / DFT_precoded / SVD_paper`、`full + adaptive`。这是给 MacBook Air 和课堂解释用的轻量验收模式，所以会临时把 `N_s` cap 到 8；它用于检查流程，不用于报告 atlas 数字。
+
+`smoke` 是信息量稍大的本机验收: 仍然 `N_s` cap 到 8，但跑 `cv=1.0 / 0.30`、`SNR=[0,10]`、`kappa=[0,0.1]`、每点 2 帧，用来检查 CSI、各向异性和多 SNR 维度是否都通。
+
+`fullmini` 是最轻量 full-load 验收: 不 cap `N_s`，只跑 strict isotropic reference、`SNR=5`、`kappa=0`、3 帧、`full` 策略。它用于验证代码能跑通 `ms=Nstreams=60` 的完整 block channel + LMMSE 链路，并和 atlas `ber3-iso-perfect` 作量级对照。
+
+`local2min` 是约 2 分钟的本机验收: 仍然 `N_s` cap 到 8，但跑 `cv=1.0 / 0.30`、`SNR=[0,5,10]`、`kappa=[0,0.1]`、每点 20 帧，并默认跑一个很小的 capacity sweep。
+
+`paper` 对齐最新 atlas v4 范围: BER 使用 `cv=1.0 / 0.10 / 0.30`、`kappa=[0,0.1,1.0]`、`SNR=-5:5:15`；capacity 使用 `cv=[0.01,0.30,1.00]`、固定噪声、water-filling 扫总功率。完整 `paper` 模式建议在 Win MATLAB 或远程机器跑。
+
+`paperfig` 是新的交付主图模式:
+
+- Fig.1: strict isotropic BER, `full` only, perfect CSI + `fixed_var` CSI (`sigma_e^2=5e-4`) 合在一张 6 线图。
+- Fig.2: vMF `cv=0.30` anisotropic BER, 同样 perfect + fixed-var 6 线图。
+- Fig.3: raw doubly-selective channel capacity, no precoder loop, `sigma2=1`, `P_dBW=0:5:30`, water-filling。
+- Fig.4: strict isotropic low-MIMO reveal, `5x5`, `N_s=1`, `v=860 km/h`, `tau_max=32 us`, fractional Doppler, 6 线: `AFWDM`, `AFDM+DFT`, `AFDM+SVD`, `OFWDM`, `OFDM+DFT`, `OFDM+SVD`。
+
+## 代码结构
+
+- `main_atlas_v4_delivery.m`: 老师主要看的主脚本，保留完整 BER 主循环。
+- `make_delivery_config.m`: `quick` / `paper` 参数。
+- `prepare_delivery_scenario.m`: 显式准备 PAS、`Sigma2`、`Sigma2_p`、`cfg_base`、`Dr/Ds`，不调用旧 `AFDM_AFWDM_Compare.m`。
+- `select_modes_atlas_v4.m`: 最新 atlas v4 overlap/nomask 模式选择，含 `full` 和 `adaptive`。
+- `select_modes_main_eq45_reference.m`: main.pdf Eq.(4)-(5) strict center ellipse 对照代码，默认不用。
+- `run_delivery_capacity.m`: 可选 capacity helper。
+- `plot_delivery_results.m`: 保存 `.png`。
+- `pilot_demo_embedded_channel_estimation.m`: 独立 pilot 原型，不进入四张主图。
+
+## 口径说明
+
+- BER 横轴是 per-symbol unit-QAM SNR，`N0=1/SNR`。
+- `paper` 仍可使用 `snr_coupled` simulated-pilot model: `sigma_e^2 = kappa/(SNR*Lch)`。
+- `paperfig` 重新启用 `fixed_var`: `sigma_e^2=val`, 与 SNR 解耦，用来显示 error floor。
+- 信道采用 main.pdf Eq.(32) 对应的 `sqrt(Mr*Ms)*sqrt(Sigma2_p)` per-path scaling，不做 frame-level renormalization。
+- 最新 atlas v4 模式选择使用 overlap/nomask；这和 main.pdf Eq.(4)-(5) 的 strict center-lattice ellipse 不完全一致，reference helper 已保留用于解释差异。
+- `cv=1.0` 在本交付版默认作为 isotropic-like vMF；严格 isotropic reference 可通过 `prepare_delivery_scenario` 的 `pas_model='isotropic_reference'` 使用，但默认不跑。
+
+## 验收标准
+
+- `quick` 模式能生成一个 `.mat` 和至少一张 BER `.png`。
+- 主脚本从参数、PAS、模式选择、信道、CSI、block channel、LMMSE 到保存结果的流程可顺读。
+- `paperfig` 生成 4 张主图 PNG，BER 图 y 轴使用 decade ticks。
+- `fixed_var` 仅用于 controlled CSI-error floor 图；`snr_coupled` 仍保留给 atlas v4 口径。
+- `select_modes_atlas_v4.m` 同时支持 `full` 和 `adaptive`。
+- `select_modes_main_eq45_reference.m` 存在但不参与默认主流程。
+- `prepare_delivery_scenario.m` 不再 `run` 旧 wrapper。
+- 保存的 `metadata` 说明 SNR、CSI、channel scaling 和 mode selector 口径。

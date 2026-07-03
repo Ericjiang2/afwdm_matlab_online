@@ -23,6 +23,40 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260703-01] Delivery Figure Workflow Mirror
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Added `delivery/atlas_v4_matlab/` to the MATLAB Online repo.
+- New main entry:
+
+```matlab
+mode = "paperfig";
+run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
+```
+
+- `paperfig` generates four current delivery figures:
+  1. strict isotropic BER, perfect CSI + fixed-var CSI in one 6-line plot;
+  2. vMF `cv=0.30` anisotropic BER, same 6-line format;
+  3. raw doubly-selective channel water-filling capacity, no precoder loop;
+  4. low-MIMO `5x5`, `N_s=1` waveform/precoding comparison.
+- Added standalone `pilot_demo_embedded_channel_estimation.m` for embedded-pilot
+  channel-estimation prototyping.
+
+**Why**:
+- The delivery scripts are now the preferred maintainable entry point.
+- `fixed_var` CSI is reintroduced as a controlled error-floor experiment, while
+  raw capacity is separated from precoding comparisons.
+
+**Expected effect**:
+- MATLAB Online can run the same delivery workflow as the main repo without
+  relying on old atlas refresh wrappers.
+- Outputs are written under `delivery/atlas_v4_matlab/outputs/`.
+
+**Result**:
+- Pending MATLAB Online execution.
+
 ### [online-20260701-01] cv0.10 Adaptive Perfect High-SNR 500-Frame Runner
 
 **Commit**: `<PENDING>`

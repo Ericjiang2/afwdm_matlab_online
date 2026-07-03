@@ -12,6 +12,23 @@ Commit marker: `348a43efc597f850a00e70481cbcee9f81a4ba86`
 5. Run `run('run_online_smoke_v4.m')` first.
 6. If smoke passes, run `run('run_online_all_v4.m')` for a resumable full queue.
 
+## Delivery Figure Workflow
+
+The maintainable delivery-version scripts are mirrored under
+`delivery/atlas_v4_matlab/`. To generate the current four delivery figures, run:
+
+```matlab
+mode = "paperfig";
+run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
+```
+
+Outputs go to `delivery/atlas_v4_matlab/outputs/`. The standalone embedded-pilot
+prototype can be run separately:
+
+```matlab
+run('delivery/atlas_v4_matlab/pilot_demo_embedded_channel_estimation.m')
+```
+
 ## Fallback Path: Zip Upload
 
 Upload `afwdm_v4_online_20260701_110728.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
