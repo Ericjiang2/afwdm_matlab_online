@@ -21,7 +21,7 @@
 %   - mode selection 用 overlap/nomask; main.pdf Eq.(4)-(5) strict center
 %     ellipse 只保留在 select_modes_main_eq45_reference.m 做对照
 
-clearvars -except mode run_capacity; clc; close all;
+clearvars -except mode run_capacity cfg_override; clc; close all;
 
 this_dir = fileparts(mfilename('fullpath'));
 addpath(this_dir);
@@ -30,6 +30,9 @@ if ~exist('mode', 'var') || isempty(mode)
     mode = "quick";
 end
 cfg_run = make_delivery_config(mode);
+if exist('cfg_override', 'var') && ~isempty(cfg_override)
+    cfg_run = merge_delivery_config(cfg_run, cfg_override);
+end
 if exist('run_capacity', 'var') && ~isempty(run_capacity)
     cfg_run.run_capacity = logical(run_capacity);
 end

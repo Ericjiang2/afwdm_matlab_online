@@ -23,6 +23,38 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260705-01] Delivery Runner Per-SNR Checkpoints
+
+**Commit**: `f3768f5`
+
+**Changed**:
+- `run_delivery_online_resumable.m` now splits BER and low-MIMO sweeps into
+  one task per SNR point.
+- Each completed SNR point writes its own checkpoint under
+  `delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/checkpoints/`.
+- Final multi-SNR figures are rebuilt from the per-SNR MAT files under
+  `delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/final/`.
+- Added `merge_delivery_config.m`, a small recursive override helper used by
+  the runner to set a single SNR point and task-specific output directory.
+
+**Why**:
+- MATLAB Online browser/session interruptions should lose at most the current
+  SNR point, not an entire scenario.
+- The checkpoint logic stays in the Online runner instead of thickening the
+  main delivery simulation script.
+
+**Expected effect**:
+- Re-running
+
+```matlab
+run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
+```
+
+  skips completed SNR checkpoints and continues from the first missing point.
+
+**Result**:
+- Pending MATLAB Online execution.
+
 ### [online-20260703-01] Delivery Figure Workflow Mirror
 
 **Commit**: `<PENDING>`

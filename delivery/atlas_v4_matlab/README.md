@@ -23,8 +23,10 @@ MATLAB Online 推荐断点续跑入口:
 run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 ```
 
-如果浏览器或会话中断，重新运行同一条命令即可。已完成阶段会通过
-`delivery/atlas_v4_matlab/outputs/online_runs/` 下的 checkpoint 跳过。
+如果浏览器或会话中断，重新运行同一条命令即可。BER 和 low-MIMO
+会按每个 SNR 点写 checkpoint，已完成 SNR 点会跳过；最终多 SNR 图会从
+这些 per-SNR `.mat` 合并生成到
+`delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/final/`。
 
 `quick` 默认只跑最小 BER 流程: `cv=1.0` isotropic-like、perfect CSI、`AFWDM / DFT_precoded / SVD_paper`、`full + adaptive`。这是给 MacBook Air 和课堂解释用的轻量验收模式，所以会临时把 `N_s` cap 到 8；它用于检查流程，不用于报告 atlas 数字。
 
@@ -51,7 +53,8 @@ run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 - `select_modes_atlas_v4.m`: 最新 atlas v4 overlap/nomask 模式选择，含 `full` 和 `adaptive`。
 - `select_modes_main_eq45_reference.m`: main.pdf Eq.(4)-(5) strict center ellipse 对照代码，默认不用。
 - `run_delivery_capacity.m`: 可选 capacity helper。
-- `run_delivery_online_resumable.m`: MATLAB Online 断点续跑 wrapper，按四张主图分阶段保存。
+- `run_delivery_online_resumable.m`: MATLAB Online 断点续跑 wrapper，BER/low-MIMO 按 SNR 点保存并最后合并主图。
+- `merge_delivery_config.m`: 小型递归配置覆盖 helper，让 Online runner 能指定单个 SNR 和输出目录而不污染主配置表。
 - `plot_delivery_results.m`: 保存 `.png`。
 - `pilot_demo_embedded_channel_estimation.m`: 独立 pilot 原型，不进入四张主图。
 
