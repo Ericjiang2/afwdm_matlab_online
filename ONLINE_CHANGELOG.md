@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260705-01] Delivery Runner Per-SNR Checkpoints
 
-**Commit**: `f3768f5`
+**Commit**: `04cd28d`
 
 **Changed**:
 - `run_delivery_online_resumable.m` now splits BER and low-MIMO sweeps into
