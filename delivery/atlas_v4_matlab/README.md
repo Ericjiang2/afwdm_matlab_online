@@ -43,7 +43,7 @@ PNG，已完成 SNR 点会跳过；最终多 SNR 图会从这些 per-SNR `.mat` 
 - Fig.1: strict isotropic BER, `full` only, perfect CSI + `fixed_var` CSI (`sigma_e^2=5e-4`) 合在一张 6 线图。
 - Fig.2: vMF `cv=0.30` anisotropic BER, 同样 perfect + fixed-var 6 线图。
 - Fig.3: raw doubly-selective channel capacity, no precoder loop, `sigma2=1`, `P_dBW=0:5:30`, water-filling。
-- Fig.4: strict isotropic low-MIMO reveal, `5x5`, `N_s=1`, `v=860 km/h`, `tau_max=32 us`, fractional Doppler, 6 线: `AFWDM`, `AFDM+DFT`, `AFDM+SVD`, `OFWDM`, `OFDM+DFT`, `OFDM+SVD`。
+- Fig.4: strict isotropic low-MIMO reveal, `4x4`, `N_s=1`, `v=860 km/h`, `tau_max=32 us`, fractional Doppler, 6 线: `AFWDM`, `AFDM+DFT`, `AFDM+SVD`, `OFWDM`, `OFDM+DFT`, `OFDM+SVD`。
 
 ## 代码结构
 

@@ -194,7 +194,8 @@ end
 
 low_mimo_results = [];
 if cfg_run.run_low_mimo_precoding
-    fprintf('\n[low-mimo] running 5x5/Ns=1 waveform+precoding comparison...\n');
+    fprintf('\n[low-mimo] running %dx%d/Ns=%d waveform+precoding comparison...\n', ...
+        cfg_run.low_mimo.array_shape(1), cfg_run.low_mimo.array_shape(2), cfg_run.low_mimo.N_s);
     low_mimo_results = run_low_mimo_precoding_ber(cfg_run);
 end
 

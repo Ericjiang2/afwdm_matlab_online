@@ -1,5 +1,5 @@
 function low = run_low_mimo_precoding_ber(cfg_run)
-%RUN_LOW_MIMO_PRECODING_BER  5x5/Ns=1 waveform and precoder BER comparison.
+%RUN_LOW_MIMO_PRECODING_BER  Low-MIMO/Ns=1 waveform and precoder BER comparison.
 %
 % This is kept separate from main_atlas_v4_delivery so Fig.4-specific
 % parameters and six-scheme bookkeeping do not thicken the main BER flow.

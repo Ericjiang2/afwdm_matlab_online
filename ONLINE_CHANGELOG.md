@@ -23,6 +23,30 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260708-03] Low-MIMO Figure Uses 4x4 Array
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Changed the delivery Fig.4 low-MIMO comparison from `5x5` to `4x4`,
+  keeping `N_s=1`, `v=860 km/h`, `tau_max=32 us`, and fractional Doppler.
+- Updated status text and README wording to avoid hard-coded `5x5` labels.
+
+**Why**:
+- With half-wavelength spacing, `5x5` gives an aperture of `2.5 lambda`.
+- The strict isotropic variance helper `function_computeVar` expects integer
+  aperture dimensions and fails on `zeros(2.5,2.5)`.
+- `4x4` preserves the low-MIMO diagnostic purpose while using integer aperture
+  `4*0.5 = 2 lambda`.
+
+**Expected effect**:
+- `paperfig_low_mimo` should pass scenario preparation in MATLAB Online.
+- Existing completed BER/capacity checkpoints remain usable; only the low-MIMO
+  task outputs change to `ber_low_mimo_4x4_ns1_precoding.png`.
+
+**Result**:
+- Pending MATLAB Online execution.
+
 ### [online-20260708-02] Precoding-Free Capacity Sanity Runner
 
 **Commit**: `298c416`
