@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260708-03] Low-MIMO Figure Uses 4x4 Array
 
-**Commit**: `<PENDING>`
+**Commit**: `4d07fb7`
 
 **Changed**:
 - Changed the delivery Fig.4 low-MIMO comparison from `5x5` to `4x4`,
