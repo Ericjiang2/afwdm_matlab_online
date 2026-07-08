@@ -63,7 +63,11 @@ run('delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m')
 ```
 
 **Result**:
-- Pending MATLAB Online execution.
+- Local MATLAB R2025a smoke passed on 2026-07-08 after adding fixed-aperture
+  mode-grid embedding for the spacing sanity branch.
+- Smoke output generated both expected figures and reported
+  `growth ratio physical/iid = 2.127 / 3.961 (pass=1)`. This is only a
+  one-frame smoke diagnostic, not a paper-quality average.
 
 ### [online-20260708-01] Per-SNR Checkpoints Use MAT-Only Completion
 

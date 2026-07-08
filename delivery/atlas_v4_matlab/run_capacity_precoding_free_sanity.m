@@ -198,7 +198,7 @@ for iSpacing = 1:nSpacing
     cfg_spacing.array_shape = max(1, round(cfg_run.spacing_fixed_aperture_lambda ./ d));
     array_shapes(iSpacing, :) = cfg_spacing.array_shape;
 
-    scenario = prepare_delivery_scenario(cfg_spacing, cfg_spacing.spacing_scenario);
+    scenario = prepare_spacing_physical_scenario(cfg_spacing, cfg_spacing.spacing_scenario);
     cfg = scenario.cfg;
 
     fprintf('[spacing] d=1/%d lambda, array=%dx%d\n', ...
@@ -226,7 +226,150 @@ spacing_results.array_shapes = array_shapes;
 spacing_results.P_dBW = cfg_run.spacing_P_dBW;
 spacing_results.physical_model = physical_model;
 spacing_results.iid_rayleigh = iid_rayleigh;
+phys_mean = mean(physical_model, 2, 'omitnan');
+iid_mean = mean(iid_rayleigh, 2, 'omitnan');
+spacing_results.physical_growth_ratio = phys_mean(end) / phys_mean(1);
+spacing_results.iid_growth_ratio = iid_mean(end) / iid_mean(1);
+spacing_results.growth_ratio_test = spacing_results.physical_growth_ratio < ...
+    spacing_results.iid_growth_ratio;
 spacing_results.sanity_question = 'Does the physical_model avoid iid_rayleigh black-line oversampling growth?';
+end
+
+function scenario = prepare_spacing_physical_scenario(cfg_run, scenario_spec)
+cfg = make_precoding_free_base_cfg(cfg_run);
+cfg.pas_model = scenario_spec.pas_model;
+
+mode_shape = max(1, round(cfg_run.spacing_fixed_aperture_lambda .* 2));
+mode_cfg = cfg;
+mode_cfg.Msx = mode_shape(1);
+mode_cfg.Msy = mode_shape(2);
+mode_cfg.Mrx = mode_shape(1);
+mode_cfg.Mry = mode_shape(2);
+mode_cfg.Lsx = cfg_run.spacing_fixed_aperture_lambda(1);
+mode_cfg.Lsy = cfg_run.spacing_fixed_aperture_lambda(2);
+mode_cfg.Lrx = cfg_run.spacing_fixed_aperture_lambda(1);
+mode_cfg.Lry = cfg_run.spacing_fixed_aperture_lambda(2);
+
+switch lower(cfg.pas_model)
+    case {'isotropic', 'isotropic_reference'}
+        [var_s_raw, ~] = function_computeVar(mode_cfg.Lsx, mode_cfg.Lsy);
+        [var_r_raw, ~] = function_computeVar(mode_cfg.Lrx, mode_cfg.Lry);
+        Ps_shift_raw = var_s_raw.';
+        Pr_shift_raw = var_r_raw.';
+    otherwise
+        error('run_capacity_precoding_free_sanity:spacingPAS', ...
+            'Spacing sanity currently supports isotropic physical mode variance, got "%s".', ...
+            cfg.pas_model);
+end
+
+Ps_mode = physical_mode_variance_to_dft(Ps_shift_raw, mode_cfg.Msx, mode_cfg.Msy, ...
+    mode_cfg.Lsx, mode_cfg.Lsy, cfg.disable_prop_mask);
+Pr_mode = physical_mode_variance_to_dft(Pr_shift_raw, mode_cfg.Mrx, mode_cfg.Mry, ...
+    mode_cfg.Lrx, mode_cfg.Lry, cfg.disable_prop_mask);
+
+Ps = embed_mode_variance_2d_local(Ps_mode, cfg.Msx, cfg.Msy);
+Pr = embed_mode_variance_2d_local(Pr_mode, cfg.Mrx, cfg.Mry);
+Ps = Ps / sum(Ps(:));
+Pr = Pr / sum(Pr(:));
+Sigma2 = Pr(:) * (Ps(:).');
+Sigma2 = Sigma2 / sum(Sigma2(:));
+
+scenario = struct();
+scenario.label = scenario_spec.label;
+scenario.cfg = cfg;
+scenario.Sigma2 = Sigma2;
+scenario.Sigma2_p = {};
+scenario.Dr = ones(cfg.Mr, 1);
+scenario.Ds = ones(cfg.Ms, 1);
+scenario.Ps = Ps;
+scenario.Pr = Pr;
+scenario.use_perpath_sigma = false;
+scenario.sigma_mass_sum = sum(Sigma2(:));
+scenario.notes = struct( ...
+    'spacing_model', 'fixed physical aperture; extra dense-sampling DFT bins get zero variance', ...
+    'negative_control', 'iid_rayleigh uses all sample-space entries and should show oversampling growth');
+end
+
+function cfg = make_precoding_free_base_cfg(cfg_run)
+cfg = struct();
+c0 = 3e8;
+cfg.fc = cfg_run.fc;
+cfg.lambda = c0 / cfg.fc;
+cfg.v_max_kmh = cfg_run.v_max_kmh;
+cfg.v_max = cfg.v_max_kmh / 3.6;
+cfg.Deltaf = cfg_run.Deltaf;
+cfg.Tsym = 1 / cfg.Deltaf;
+cfg.Nblk = cfg_run.Nblk;
+cfg.Ts = 1 / (cfg.Nblk * cfg.Deltaf);
+cfg.nu_max = cfg.v_max / cfg.lambda;
+cfg.kmax = ceil(cfg.nu_max / cfg.Deltaf);
+cfg.tau_max = cfg_run.tau_max_us * 1e-6;
+cfg.lmax = ceil(cfg.tau_max / cfg.Ts);
+cfg.Lch = 4;
+
+cfg.Msx = cfg_run.array_shape(1);
+cfg.Msy = cfg_run.array_shape(2);
+cfg.Mrx = cfg_run.array_shape(1);
+cfg.Mry = cfg_run.array_shape(2);
+cfg.Ms = cfg.Msx * cfg.Msy;
+cfg.Mr = cfg.Mrx * cfg.Mry;
+cfg.dx = cfg_run.dx;
+cfg.dy = cfg_run.dy;
+cfg.Lsx = cfg_run.spacing_fixed_aperture_lambda(1);
+cfg.Lsy = cfg_run.spacing_fixed_aperture_lambda(2);
+cfg.Lrx = cfg_run.spacing_fixed_aperture_lambda(1);
+cfg.Lry = cfg_run.spacing_fixed_aperture_lambda(2);
+cfg.sz = 0;
+cfg.rz = 0;
+cfg.disable_prop_mask = cfg_run.disable_prop_mask;
+cfg.channel_norm_mode = cfg_run.channel_norm_mode;
+cfg.Us_full = make_2d_dft(cfg.Msx, cfg.Msy);
+cfg.Ur_full = make_2d_dft(cfg.Mrx, cfg.Mry);
+end
+
+function P_dft = physical_mode_variance_to_dft(P_shift_raw, Mx, My, Lx, Ly, disable_prop_mask)
+[KX, KY] = ndgrid((0:Mx-1) - floor(Mx/2), (0:My-1) - floor(My/2));
+kappa2 = (KX / Lx).^2 + (KY / Ly).^2;
+prop_mask = kappa2 <= 1.0;
+if disable_prop_mask
+    prop_mask(:) = true;
+end
+P_shift = P_shift_raw .* prop_mask;
+P_dft = ifftshift(P_shift);
+P_dft = P_dft / sum(P_dft(:));
+end
+
+function P_big = embed_mode_variance_2d_local(P_mode, Mx, My)
+[nx, ny] = size(P_mode);
+assert(Mx >= nx, 'embed_mode_variance_2d_local: Mx (%d) < mode nx (%d).', Mx, nx);
+assert(My >= ny, 'embed_mode_variance_2d_local: My (%d) < mode ny (%d).', My, ny);
+
+if Mx == nx && My == ny
+    P_big = P_mode;
+    return;
+end
+
+Lx = nx / 2;
+Ly = ny / 2;
+assert(abs(Lx - round(Lx)) < 1e-12, 'Mode grid nx must be even.');
+assert(abs(Ly - round(Ly)) < 1e-12, 'Mode grid ny must be even.');
+Lx = round(Lx);
+Ly = round(Ly);
+
+P_big = zeros(Mx, My);
+pos_x_src = 1:Lx;
+neg_x_src = Lx+1:nx;
+pos_y_src = 1:Ly;
+neg_y_src = Ly+1:ny;
+pos_x_dst = 1:Lx;
+neg_x_dst = Mx-Lx+1:Mx;
+pos_y_dst = 1:Ly;
+neg_y_dst = My-Ly+1:My;
+
+P_big(pos_x_dst, pos_y_dst) = P_mode(pos_x_src, pos_y_src);
+P_big(pos_x_dst, neg_y_dst) = P_mode(pos_x_src, neg_y_src);
+P_big(neg_x_dst, pos_y_dst) = P_mode(neg_x_src, pos_y_src);
+P_big(neg_x_dst, neg_y_dst) = P_mode(neg_x_src, neg_y_src);
 end
 
 function H_sum = coherent_sum_taps(H_taps)
@@ -310,6 +453,8 @@ iid = mean(spacing.iid_rayleigh, 2, 'omitnan');
 fprintf('\n=== Spacing sanity summary ===\n');
 fprintf('physical_model first/last = %.4g / %.4g\n', phys(1), phys(end));
 fprintf('iid_rayleigh first/last   = %.4g / %.4g\n', iid(1), iid(end));
+fprintf('growth ratio physical/iid = %.4g / %.4g (pass=%d)\n', ...
+    spacing.physical_growth_ratio, spacing.iid_growth_ratio, spacing.growth_ratio_test);
 end
 
 function save_png(fig_handle, out_png)
