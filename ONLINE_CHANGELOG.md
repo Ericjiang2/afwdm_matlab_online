@@ -23,6 +23,48 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260708-02] Precoding-Free Capacity Sanity Runner
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Added `delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m`.
+- The runner compares two capacity matrices built from the same NLoS physical
+  taps: `H_spatial=sum_l H_l` and
+  `H_spacetime=sum_l kron(Theta_l,H_l)`.
+- It saves `C_spatial`, `C_spacetime_total`, and
+  `C_spacetime_per_use = C_spacetime_total / Nblk`.
+- It also generates a spacing sanity figure with a physically consistent 2D
+  NLoS curve and an `iid_rayleigh` negative control.
+
+**Why**:
+- The current capacity question is about physical-channel capacity with
+  no AFWDM/DFT/SVD precoding, not about waveform or spatial-precoder
+  comparison.
+- The spacetime block channel contains `Nblk` time uses, so the main comparison
+  uses the per-use value to avoid an artificial block-length multiplier.
+- The spacing sanity check tests whether the 2D physical model avoids the
+  unrealistic i.i.d. Rayleigh oversampling growth seen in the reference
+  literature's black-line baseline.
+
+**Expected effect**:
+- In MATLAB Online, run:
+
+```matlab
+capacity_sanity_mode = "smoke";
+run('delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m')
+```
+
+- For the fuller run, set:
+
+```matlab
+capacity_sanity_mode = "paper";
+run('delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m')
+```
+
+**Result**:
+- Pending MATLAB Online execution.
+
 ### [online-20260708-01] Per-SNR Checkpoints Use MAT-Only Completion
 
 **Commit**: `02d55a4`
