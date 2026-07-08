@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260708-02] Precoding-Free Capacity Sanity Runner
 
-**Commit**: `<PENDING>`
+**Commit**: `298c416`
 
 **Changed**:
 - Added `delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m`.
