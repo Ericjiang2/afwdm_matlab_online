@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260708-01] Per-SNR Checkpoints Use MAT-Only Completion
 
-**Commit**: `<PENDING>`
+**Commit**: `02d55a4`
 
 **Changed**:
 - Per-SNR BER and low-MIMO tasks now set `skip_plots=true`.
