@@ -24,8 +24,8 @@ run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 ```
 
 如果浏览器或会话中断，重新运行同一条命令即可。BER 和 low-MIMO
-会按每个 SNR 点写 checkpoint，已完成 SNR 点会跳过；最终多 SNR 图会从
-这些 per-SNR `.mat` 合并生成到
+会按每个 SNR 点写 checkpoint；per-SNR task 只保存 `.mat`，不导出单点
+PNG，已完成 SNR 点会跳过；最终多 SNR 图会从这些 per-SNR `.mat` 合并生成到
 `delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/final/`。
 
 `quick` 默认只跑最小 BER 流程: `cv=1.0` isotropic-like、perfect CSI、`AFWDM / DFT_precoded / SVD_paper`、`full + adaptive`。这是给 MacBook Air 和课堂解释用的轻量验收模式，所以会临时把 `N_s` cap 到 8；它用于检查流程，不用于报告 atlas 数字。

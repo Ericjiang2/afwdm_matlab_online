@@ -233,13 +233,21 @@ end
 out_mat = fullfile(cfg_run.output_dir, sprintf('atlas_v4_delivery_%s_%s.mat', ...
     cfg_run.mode, datestr(now, 'yyyymmdd_HHMMSS')));
 save(out_mat, 'results', 'metadata', 'cfg_run', '-v7');
-plot_files = plot_delivery_results(results, cfg_run);
+
+plot_files = {};
+if ~isfield(cfg_run, 'skip_plots') || ~cfg_run.skip_plots
+    plot_files = plot_delivery_results(results, cfg_run);
+end
 
 fprintf('\n============================================================\n');
 fprintf(' Delivery simulation done.\n');
 fprintf(' MAT: %s\n', out_mat);
-for ii = 1:numel(plot_files)
-    fprintf(' PNG: %s\n', plot_files{ii});
+if isempty(plot_files)
+    fprintf(' PNG: skipped for this run\n');
+else
+    for ii = 1:numel(plot_files)
+        fprintf(' PNG: %s\n', plot_files{ii});
+    end
 end
 fprintf('============================================================\n');
 

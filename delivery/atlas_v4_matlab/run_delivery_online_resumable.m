@@ -4,8 +4,8 @@
 % Re-run this command after a browser/session interruption:
 %   run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 %
-% BER and low-MIMO sweeps are checkpointed per SNR point. Final multi-SNR
-% figures are rebuilt from the per-SNR MAT files under:
+% BER and low-MIMO sweeps are checkpointed per SNR point. Per-SNR tasks save
+% MAT files only; final multi-SNR figures are rebuilt from those MAT files under:
 %   delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/final/
 
 clear; clc;
@@ -102,10 +102,10 @@ low_ids = {};
 for snr = cfg0.SNR_dB_list
     id = sprintf('ber_strict_isotropic_snr_%s', snr_tag(snr));
     task_dir = fullfile(run_root, 'tasks', id);
-    override = struct('SNR_dB_list', snr, 'output_dir', task_dir);
+    override = struct('SNR_dB_list', snr, 'output_dir', task_dir, 'skip_plots', true);
     tasks(end+1) = make_run_task(id, 'paperfig_iso', snr, override, ...
         fullfile(task_dir, 'atlas_v4_delivery_paperfig_iso_*.mat'), ...
-        {fullfile(task_dir, 'figures', 'ber_strict_isotropic_perfect_vs_fixedvar.png')}); %#ok<AGROW>
+        {}); %#ok<AGROW>
     iso_ids{end+1} = id; %#ok<AGROW>
 end
 tasks(end+1) = make_combine_task('combine_ber_strict_isotropic', 'combine_ber', ...
@@ -115,10 +115,10 @@ tasks(end+1) = make_combine_task('combine_ber_strict_isotropic', 'combine_ber', 
 for snr = cfg0.SNR_dB_list
     id = sprintf('ber_vmf_cv030_snr_%s', snr_tag(snr));
     task_dir = fullfile(run_root, 'tasks', id);
-    override = struct('SNR_dB_list', snr, 'output_dir', task_dir);
+    override = struct('SNR_dB_list', snr, 'output_dir', task_dir, 'skip_plots', true);
     tasks(end+1) = make_run_task(id, 'paperfig_vmf', snr, override, ...
         fullfile(task_dir, 'atlas_v4_delivery_paperfig_vmf_*.mat'), ...
-        {fullfile(task_dir, 'figures', 'ber_vmf_cv030_perfect_vs_fixedvar.png')}); %#ok<AGROW>
+        {}); %#ok<AGROW>
     vmf_ids{end+1} = id; %#ok<AGROW>
 end
 tasks(end+1) = make_combine_task('combine_ber_vmf_cv030', 'combine_ber', ...
@@ -135,11 +135,10 @@ for snr = low.SNR_dB_list
     id = sprintf('low_mimo_precoding_snr_%s', snr_tag(snr));
     task_dir = fullfile(run_root, 'tasks', id);
     low_override = struct('SNR_dB_list', snr);
-    override = struct('output_dir', task_dir, 'low_mimo', low_override);
+    override = struct('output_dir', task_dir, 'low_mimo', low_override, 'skip_plots', true);
     tasks(end+1) = make_run_task(id, 'paperfig_low_mimo', snr, override, ...
         fullfile(task_dir, 'atlas_v4_delivery_paperfig_low_mimo_*.mat'), ...
-        {fullfile(task_dir, 'figures', sprintf('ber_low_mimo_%dx%d_ns%d_precoding.png', ...
-            low.array_shape(1), low.array_shape(2), low.N_s))}); %#ok<AGROW>
+        {}); %#ok<AGROW>
     low_ids{end+1} = id; %#ok<AGROW>
 end
 tasks(end+1) = make_combine_task('combine_low_mimo_precoding', 'combine_low_mimo', ...

@@ -23,6 +23,32 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260708-01] Per-SNR Checkpoints Use MAT-Only Completion
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Per-SNR BER and low-MIMO tasks now set `skip_plots=true`.
+- A per-SNR task is considered complete when its `.mat` output exists; it no
+  longer requires a one-point PNG.
+- Final combined tasks still load all per-SNR MAT files and generate the
+  multi-SNR PNG figures under `online_runs/<run_id>/final/`.
+
+**Why**:
+- MATLAB Online repeatedly timed out inside `saveas/print` while exporting
+  one-point per-SNR PNGs, after the BER calculation and MAT save had already
+  completed.
+- Treating MAT as the per-SNR checkpoint avoids rerunning completed SNR points
+  and keeps graphics export concentrated in the final combine stage.
+
+**Expected effect**:
+- If a run previously failed after printing a BER line but before writing a
+  `.done` checkpoint, rerunning the resumable script can recover that task
+  from the existing `.mat` instead of recomputing it.
+
+**Result**:
+- Pending MATLAB Online execution.
+
 ### [online-20260705-01] Delivery Runner Per-SNR Checkpoints
 
 **Commit**: `04cd28d`
