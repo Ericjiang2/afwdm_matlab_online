@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260708-04] 18x18 Aperture Capacity Magnitude Check
 
-**Commit**: `<PENDING>`
+**Commit**: `93d4acf`
 
 **Changed**:
 - Added `delivery/atlas_v4_matlab/run_capacity_18x18_aperture_check.m`.
