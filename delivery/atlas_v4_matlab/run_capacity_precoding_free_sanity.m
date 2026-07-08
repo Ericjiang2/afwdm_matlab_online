@@ -7,6 +7,7 @@
 %   - C_spacetime_per_use: C_spacetime_total / Nblk
 %   - capacity_precoding_free_vs_power.png
 %   - capacity_spacing_sanity.png
+%   - aperture18 mode: 18x18, lambda/2, physical-only capacity check
 %
 % This runner intentionally uses no AFWDM/DFT/SVD precoding, no mode
 % selection, no RF truncation, and no beamspace stream adaptation.
@@ -49,7 +50,11 @@ fprintf(' Matrix B: H_spacetime = sum_l kron(Theta_l, H_l), plotted / Nblk\n');
 fprintf('============================================================\n');
 
 power_results = run_power_sanity(cfg_run);
-spacing_results = run_spacing_sanity(cfg_run);
+if cfg_run.run_spacing_sanity
+    spacing_results = run_spacing_sanity(cfg_run);
+else
+    spacing_results = [];
+end
 
 results = struct();
 results.power = power_results;
@@ -69,6 +74,8 @@ metadata.excluded_processing = {'spatial_precoding', 'mode_selection', ...
     'rf_truncation', 'beamspace_stream_adaptation'};
 metadata.Nblk = cfg_run.Nblk;
 metadata.capacity_sigma2_fixed = cfg_run.capacity_sigma2_fixed;
+metadata.capacity_run_spacetime = cfg_run.capacity_run_spacetime;
+metadata.run_spacing_sanity = cfg_run.run_spacing_sanity;
 
 timestamp = datestr(now, 'yyyymmdd_HHMMSS');
 out_mat = fullfile(out_dir, sprintf('capacity_precoding_free_sanity_%s_%s.mat', ...
@@ -91,6 +98,8 @@ cfg_run.capacity_sanity_mode = char(mode);
 cfg_run.capacity_sigma2_fixed = 1;
 cfg_run.schemes = {};
 cfg_run.strategies = {};
+cfg_run.capacity_run_spacetime = true;
+cfg_run.run_spacing_sanity = true;
 cfg_run.spacing_fixed_aperture_lambda = [4, 4];
 cfg_run.spacing_scenario = struct('label', 'physical_model', ...
     'pas_model', 'isotropic', 'cv', 1.0, 'use_perpath_sigma', false);
@@ -124,9 +133,37 @@ switch mode
         cfg_run.spacing_P_dBW = 20;
         cfg_run.spacing_list_lambda = [1/2, 1/4, 1/6, 1/8];
 
+    case "aperture18"
+        cfg_run.array_shape = [18, 18];
+        cfg_run.dx = 0.5;
+        cfg_run.dy = 0.5;
+        cfg_run.Nblk = 64;
+        cfg_run.capacity_run_spacetime = false;
+        cfg_run.run_spacing_sanity = false;
+        cfg_run.capacity_numFrames = get_optional_field(cfg_run, ...
+            'capacity_aperture18_numFrames', 30);
+        cfg_run.capacity_P_dBW_list = get_optional_field(cfg_run, ...
+            'capacity_aperture18_P_dBW_list', 0:5:30);
+        cfg_run.capacity_scenarios = struct( ...
+            'label', {'aperture18_isotropic', 'aperture18_vmf_cv030'}, ...
+            'pas_model', {'isotropic', 'vmf'}, ...
+            'cv', {1.0, 0.30}, ...
+            'use_perpath_sigma', {false, true});
+        cfg_run.spacing_numFrames = 0;
+        cfg_run.spacing_P_dBW = 20;
+        cfg_run.spacing_list_lambda = [];
+
     otherwise
         error('run_capacity_precoding_free_sanity:unknownMode', ...
-            'Unknown capacity_sanity_mode "%s". Use smoke or paper.', mode);
+            'Unknown capacity_sanity_mode "%s". Use smoke, paper, or aperture18.', mode);
+end
+end
+
+function value = get_optional_field(s, field_name, default_value)
+if isfield(s, field_name) && ~isempty(s.(field_name))
+    value = s.(field_name);
+else
+    value = default_value;
 end
 end
 
@@ -150,20 +187,26 @@ for iScenario = 1:nScenario
     for frm = 1:nFrame
         seed_base = cfg_run.seed.frame_stride * frm + ...
             cfg_run.seed.capacity_scenario_offset * iScenario;
-        [tau_vec, nu_vec] = generate_phys_dd_paths(cfg, cfg.Lch, seed_base);
         H_taps = build_delivery_channel_taps(scenario, seed_base);
 
         H_spatial = coherent_sum_taps(H_taps);
-        H_spacetime = build_spacetime_channel(H_taps, tau_vec, nu_vec, cfg.Nblk);
+        if cfg_run.capacity_run_spacetime
+            [tau_vec, nu_vec] = generate_phys_dd_paths(cfg, cfg.Lch, seed_base);
+            H_spacetime = build_spacetime_channel(H_taps, tau_vec, nu_vec, cfg.Nblk);
+        else
+            H_spacetime = [];
+        end
 
         for iP = 1:nP
             Ptot = 10^(cfg_run.capacity_P_dBW_list(iP) / 10);
             C_spatial(iScenario, iP, frm) = block_capacity_total( ...
                 H_spatial, Ptot, cfg_run.capacity_sigma2_fixed, false, cfg.Nblk);
-            C_spacetime_total(iScenario, iP, frm) = block_capacity_total( ...
-                H_spacetime, Ptot, cfg_run.capacity_sigma2_fixed, false, cfg.Nblk);
-            C_spacetime_per_use(iScenario, iP, frm) = ...
-                C_spacetime_total(iScenario, iP, frm) / cfg.Nblk;
+            if cfg_run.capacity_run_spacetime
+                C_spacetime_total(iScenario, iP, frm) = block_capacity_total( ...
+                    H_spacetime, Ptot, cfg_run.capacity_sigma2_fixed, false, cfg.Nblk);
+                C_spacetime_per_use(iScenario, iP, frm) = ...
+                    C_spacetime_total(iScenario, iP, frm) / cfg.Nblk;
+            end
         end
     end
 end
@@ -175,6 +218,7 @@ power_results.C_spatial = C_spatial;
 power_results.C_spacetime_total = C_spacetime_total;
 power_results.C_spacetime_per_use = C_spacetime_per_use;
 power_results.Nblk = cfg_run.Nblk;
+power_results.spacetime_enabled = cfg_run.capacity_run_spacetime;
 power_results.capacity_formula = 'water-filling over svd(H)^2 with fixed noise';
 power_results.spatial_matrix = 'coherent sum of physical taps';
 power_results.spacetime_matrix = 'sum kron(delay_doppler_operator, physical_tap)';
@@ -404,19 +448,29 @@ for iScenario = 1:numel(power.labels)
     y_st = squeeze(mean(power.C_spacetime_per_use(iScenario, :, :), 3, 'omitnan'));
     plot(power.P_dBW_list, y_spatial, styles{1 + mod(2*iScenario-2, numel(styles))}, ...
         'LineWidth', 1.5, 'MarkerSize', 5);
-    plot(power.P_dBW_list, y_st, styles{1 + mod(2*iScenario-1, numel(styles))}, ...
-        'LineWidth', 1.5, 'MarkerSize', 5);
     leg{end+1} = sprintf('%s physical only', power.labels{iScenario}); %#ok<AGROW>
-    leg{end+1} = sprintf('%s physical + DD / Nblk', power.labels{iScenario}); %#ok<AGROW>
+    if any(isfinite(y_st(:)))
+        plot(power.P_dBW_list, y_st, styles{1 + mod(2*iScenario-1, numel(styles))}, ...
+            'LineWidth', 1.5, 'MarkerSize', 5);
+        leg{end+1} = sprintf('%s physical + DD / Nblk', power.labels{iScenario}); %#ok<AGROW>
+    end
 end
 xlabel('Total transmit power P (dBW)');
 ylabel('Capacity per use (bit/s/Hz)');
-title('Precoding-free physical vs delay-Doppler capacity');
+if power.spacetime_enabled
+    title('Precoding-free physical vs delay-Doppler capacity');
+else
+    title('Precoding-free physical-only capacity');
+end
 legend(leg, 'Location', 'northwest', 'Interpreter', 'none');
 out_png = fullfile(fig_dir, 'capacity_precoding_free_vs_power.png');
 save_png(f, out_png);
 close(f);
 plot_files{end+1} = out_png;
+
+if ~isfield(results, 'spacing') || isempty(results.spacing)
+    return;
+end
 
 spacing = results.spacing;
 f = figure('Visible', 'off', 'Color', 'w');
@@ -443,8 +497,19 @@ idxP = numel(power.P_dBW_list);
 for iScenario = 1:numel(power.labels)
     c0 = mean(power.C_spatial(iScenario, idxP, :), 'all', 'omitnan');
     c1 = mean(power.C_spacetime_per_use(iScenario, idxP, :), 'all', 'omitnan');
-    fprintf('%s: C_spatial=%.4g, C_spacetime_per_use=%.4g\n', ...
-        power.labels{iScenario}, c0, c1);
+    if isfinite(c1)
+        fprintf('%s: C_spatial=%.4g, C_spacetime_per_use=%.4g\n', ...
+            power.labels{iScenario}, c0, c1);
+    else
+        fprintf('%s: C_spatial=%.4g, C_spacetime_per_use=skipped\n', ...
+            power.labels{iScenario}, c0);
+    end
+end
+
+if ~isfield(results, 'spacing') || isempty(results.spacing)
+    fprintf('\n=== Spacing sanity summary ===\n');
+    fprintf('Skipped for this mode.\n');
+    return;
 end
 
 spacing = results.spacing;

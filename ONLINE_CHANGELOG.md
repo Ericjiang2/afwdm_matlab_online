@@ -23,6 +23,58 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260708-04] 18x18 Aperture Capacity Magnitude Check
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Added `delivery/atlas_v4_matlab/run_capacity_18x18_aperture_check.m`.
+- Added `aperture18` mode to
+  `delivery/atlas_v4_matlab/run_capacity_precoding_free_sanity.m`.
+- The new mode uses an `18x18` UPA with `dx=dy=lambda/2`, giving an aperture
+  of roughly `9 lambda x 9 lambda`.
+- The mode runs physical-only capacity from `H_spatial=sum_l H_l` for
+  `P=0:5:30 dBW` over 30 Monte Carlo frames by default.
+- The mode skips delay-Doppler spacetime capacity and spacing sanity.
+
+**Why**:
+- The reference NLoS WDM capacity figure uses a much larger line aperture
+  (`Ls=Lr=128 lambda`) than the earlier `8x8` UPA check.
+- A `9 lambda x 9 lambda` planar aperture has physical DoF on the order of
+  `pi*9*9`, close to the reference line-aperture isotropic DoF scale.
+- The capacity metric is ergodic, so Monte Carlo averaging is appropriate.
+  Thirty frames matches the previous `paper` sanity run; users can set
+  `capacity_aperture18_numFrames = 10` before running for a quicker first
+  check.
+- The delay-Doppler block channel would be `20736 x 20736` for `Nblk=64` and
+  `18x18`, so it is intentionally skipped for this magnitude sanity check.
+
+**Expected effect**:
+- In MATLAB Online, run:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_capacity_18x18_aperture_check.m')
+```
+
+- Optional quick check:
+
+```matlab
+capacity_aperture18_numFrames = 10;
+run('delivery/atlas_v4_matlab/run_capacity_18x18_aperture_check.m')
+```
+
+**Result**:
+- Local MATLAB R2025a 1-frame smoke passed on 2026-07-08 with
+  `capacity_aperture18_P_dBW_list=30`.
+- Smoke result at 30 dBW:
+  `aperture18_isotropic C_spatial=2443 bit/s/Hz` and
+  `aperture18_vmf_cv030 C_spatial=2230 bit/s/Hz`, i.e., about
+  `2.44` and `2.23 kbit/s/Hz`.
+- This supports the intended magnitude check: increasing the planar aperture
+  from roughly `4 lambda x 4 lambda` to `9 lambda x 9 lambda` brings the
+  isotropic physical-only capacity close to the reference paper's
+  `~2 kbit/s/Hz` scale near 30 dBW.
+
 ### [online-20260708-03] Low-MIMO Figure Uses 4x4 Array
 
 **Commit**: `4d07fb7`
