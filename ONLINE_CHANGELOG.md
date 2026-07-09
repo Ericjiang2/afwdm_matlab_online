@@ -25,7 +25,7 @@ without duplicating long notes everywhere.
 
 ### [online-20260709-01] Strict-ISO AFWDM Perfect-CSI 15 dB Tail Runner
 
-**Commit**: `<PENDING>`
+**Commit**: `22f5552`
 
 **Changed**:
 - Added
