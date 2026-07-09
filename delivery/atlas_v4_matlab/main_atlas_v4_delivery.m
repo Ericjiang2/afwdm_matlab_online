@@ -174,11 +174,12 @@ for iScenario = 1:nScenario
             end
 
             for iCsi = 1:nCsi
-                fprintf('%s [A %.2e D %.2e S %.2e] ', ...
-                    csi_case_labels{iCsi}, ...
-                    BER(1,iStrategy,iSNR,iCsi,iScenario), ...
-                    BER(2,iStrategy,iSNR,iCsi,iScenario), ...
-                    BER(3,iStrategy,iSNR,iCsi,iScenario));
+                fprintf('%s [', csi_case_labels{iCsi});
+                for k = 1:nScheme
+                    fprintf('%s %.2e ', cfg_run.schemes{k}, ...
+                        BER(k,iStrategy,iSNR,iCsi,iScenario));
+                end
+                fprintf('] ');
             end
             fprintf('\n');
         end

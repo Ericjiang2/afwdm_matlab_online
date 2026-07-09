@@ -23,6 +23,55 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260709-01] Strict-ISO AFWDM Perfect-CSI 15 dB Tail Runner
+
+**Commit**: `<PENDING>`
+
+**Changed**:
+- Added
+  `delivery/atlas_v4_matlab/run_online_iso_afwdm_perfect_snr15_tail.m`.
+- Updated `delivery/atlas_v4_matlab/main_atlas_v4_delivery.m` progress
+  printing to support single-scheme runs instead of assuming all three
+  schemes are always enabled.
+- The runner targets exactly one BER point:
+  `strict_isotropic | AFWDM | full | perfect CSI | SNR=15 dB`.
+- Default run is `1000` frames split into `100`-frame chunks.
+- Default `frame_start_offset=100` continues after the existing paperfig
+  `100` frames, avoiding duplicate seeds when pooling with the archived point.
+- Each chunk writes a MAT file and checkpoint; rerunning skips completed chunks.
+- Final combine writes
+  `ISO_AFWDM_PERFECT_SNR15_TAIL_SUMMARY.txt` and a summary MAT containing
+  raw `err_total`, `bit_total`, measured `BER`, and `half_error_marker`.
+
+**Why**:
+- The archived delivery figure plotted the AFWDM perfect-CSI 15 dB point near
+  `1e-6` only because zero observed errors were displayed as
+  `0.5 / bit_total` for log-scale visualization.
+- The actual archived count was `0 errors / 768000 bits`.
+- This runner accumulates additional bits for the same point so the high-SNR
+  tail can be reported with raw error counts.
+
+**Expected effect**:
+- In MATLAB Online, run:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_iso_afwdm_perfect_snr15_tail.m')
+```
+
+- Optional larger target:
+
+```matlab
+iso_afwdm_tail_total_frames = 1500;
+run('delivery/atlas_v4_matlab/run_online_iso_afwdm_perfect_snr15_tail.m')
+```
+
+**Result**:
+- Local MATLAB R2025a 1-frame smoke passed on 2026-07-09 with
+  `iso_afwdm_tail_total_frames=1` and `iso_afwdm_tail_chunk_frames=1`.
+- Smoke generated one chunk MAT and
+  `ISO_AFWDM_PERFECT_SNR15_TAIL_SUMMARY.txt`, with `err=0`, `bits=7680`.
+- Pending MATLAB Online execution for the default 1000-frame run.
+
 ### [online-20260708-04] 18x18 Aperture Capacity Magnitude Check
 
 **Commit**: `93d4acf`
