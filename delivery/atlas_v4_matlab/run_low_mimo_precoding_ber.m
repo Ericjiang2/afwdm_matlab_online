@@ -14,8 +14,9 @@ scenario = prepare_delivery_scenario(cfg_low, cfg_run.low_mimo.scenario);
 cfg_base = scenario.cfg;
 cfg_base.use_fractional_doppler = cfg_run.low_mimo.use_fractional_doppler;
 
-modes = select_modes_atlas_v4(cfg_base, scenario.Sigma2, cfg_run.adapt_power_floor);
-N_s = cfg_run.low_mimo.N_s;
+modes_atlas = select_modes_atlas_v4(cfg_base, scenario.Sigma2, cfg_run.adapt_power_floor);
+[modes, N_s] = resolve_low_mimo_streams(cfg_run.low_mimo.N_s, cfg_base, ...
+    scenario.Sigma2, modes_atlas);
 
 schemes = {'AFWDM', 'AFDM_DFT_precoded', 'AFDM_SVD_precoded', ...
     'OFWDM', 'OFDM_DFT_precoded', 'OFDM_SVD_precoded'};
@@ -81,9 +82,26 @@ low.bit_total = bit_total;
 low.SNR_dB = cfg_run.low_mimo.SNR_dB_list;
 low.schemes = schemes;
 low.N_s = N_s;
+low.requested_N_s = cfg_run.low_mimo.N_s;
 low.array_shape = cfg_run.low_mimo.array_shape;
 low.v_max_kmh = cfg_run.low_mimo.v_max_kmh;
 low.tau_max_us = cfg_run.low_mimo.tau_max_us;
 low.use_fractional_doppler = cfg_run.low_mimo.use_fractional_doppler;
 low.mode_summary = modes;
+end
+
+function [modes, N_s] = resolve_low_mimo_streams(requested_N_s, cfg_base, Sigma2, modes_atlas)
+if ischar(requested_N_s) || isstring(requested_N_s)
+    if ~strcmpi(string(requested_N_s), "full")
+        error('run_low_mimo_precoding_ber:unknownStreamRequest', ...
+            'String N_s request must be "full", got "%s".', string(requested_N_s));
+    end
+    modes = select_modes_main_eq45_reference(cfg_base, Sigma2);
+    N_s = modes.N_s;
+    return;
+end
+
+validateattributes(requested_N_s, {'numeric'}, {'scalar', 'integer', 'positive'});
+modes = modes_atlas;
+N_s = min(requested_N_s, modes.N_full);
 end

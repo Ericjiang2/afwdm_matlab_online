@@ -23,6 +23,41 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260710-01] Full-Stream Six-Line Waveform Screen
+
+**Changed**:
+- Added `delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m`.
+- Extended `run_delivery_online_resumable.m` with a profile that checkpoints
+  this screen once per SNR point, then merges the six-line result.
+- A string request `N_s='full'` in `run_low_mimo_precoding_ber.m` now uses
+  `select_modes_main_eq45_reference`, i.e. main.pdf Eq.(4)-(5)'s centre
+  ellipse, rather than the atlas overlap/nomask selector.
+- Added `select_center_modes_2d.m` to make the strict selector self-contained
+  in MATLAB Online.
+
+**Why**:
+- The old delivery Fig.4 used `N_s=1`, which changes the spatial-stream
+  loading and can obscure the intended time-waveform comparison.
+- For a 4x4 half-wavelength array, the paper-defined centre ellipse has
+  `m_s=11`; the atlas overlap/nomask candidate set has 16 bins and must not be
+  substituted for `m_s` in this experiment.
+
+**Expected effect**:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
+```
+
+The default run is strict-isotropic, 4x4, `N_s=m_s=11`, `v=860 km/h`,
+`tau_max=32 us`, fractional Doppler, QPSK, 20 frames per SNR, and
+`SNR=-10:5:20`. It writes resumable per-SNR checkpoints under
+`delivery/atlas_v4_matlab/outputs/fullstream_waveform_screen/online_runs/`.
+
+**Result**:
+- Local MATLAB R2025a one-frame/10 dB smoke passed on 2026-07-10.
+- The saved result recorded `N_s=11`; the final generated figure was
+  `ber_low_mimo_4x4_ns11_precoding.png`.
+
 ### [online-20260709-01] Strict-ISO AFWDM Perfect-CSI 15 dB Tail Runner
 
 **Commit**: `22f5552`

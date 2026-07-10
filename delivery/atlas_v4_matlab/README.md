@@ -23,6 +23,17 @@ MATLAB Online 推荐断点续跑入口:
 run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 ```
 
+本次六线时间波形筛查的专用入口:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
+```
+
+其默认设置为 strict-isotropic、4x4、`N_s=m_s=11`（main.pdf Eq.(4)-(5)
+中心格椭圆，不是 atlas overlap/nomask 的 16 个候选 bin）、高多普勒
+`860 km/h`、`tau_max=32 us`、分数 Doppler、20 帧和 `-10:5:20 dB`。该入口
+按 SNR checkpoint，可在 MATLAB Online 中断后直接重跑。
+
 如果浏览器或会话中断，重新运行同一条命令即可。BER 和 low-MIMO
 会按每个 SNR 点写 checkpoint；per-SNR task 只保存 `.mat`，不导出单点
 PNG，已完成 SNR 点会跳过；最终多 SNR 图会从这些 per-SNR `.mat` 合并生成到

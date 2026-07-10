@@ -8,12 +8,28 @@
 % MAT files only; final multi-SNR figures are rebuilt from those MAT files under:
 %   delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/final/
 
-clear; clc;
+clearvars -except delivery_online_profile delivery_online_screen; clc;
 
 this_dir = fileparts(mfilename('fullpath'));
 addpath(this_dir);
 
-cfg0 = make_delivery_config("paperfig");
+if ~exist('delivery_online_profile', 'var') || isempty(delivery_online_profile)
+    delivery_online_profile = "paperfig";
+end
+profile = lower(string(delivery_online_profile));
+
+if profile == "fullstream_waveform_screen"
+    if ~exist('delivery_online_screen', 'var') || isempty(delivery_online_screen)
+        error('run_delivery_online_resumable:missingScreenConfig', ...
+            'The fullstream_waveform_screen profile requires delivery_online_screen.');
+    end
+    cfg0 = make_delivery_config("paperfig_low_mimo");
+    cfg0 = merge_delivery_config(cfg0, struct( ...
+        'output_dir', fullfile(this_dir, 'outputs', 'fullstream_waveform_screen'), ...
+        'low_mimo', delivery_online_screen));
+else
+    cfg0 = make_delivery_config("paperfig");
+end
 if ~exist(cfg0.output_dir, 'dir')
     mkdir(cfg0.output_dir);
 end
@@ -31,7 +47,7 @@ ensure_dir(checkpoint_dir);
 ensure_dir(final_dir);
 write_delivery_run_info(run_root, run_id);
 
-tasks = build_delivery_tasks(cfg0, run_root, final_dir);
+tasks = build_delivery_tasks(cfg0, run_root, final_dir, profile);
 
 fprintf('\n============================================================\n');
 fprintf(' Delivery online resumable runner\n');
@@ -91,13 +107,34 @@ fprintf(' Final outputs: %s\n', final_dir);
 fprintf(' Checkpoints:   %s\n', checkpoint_dir);
 fprintf('============================================================\n');
 
-function tasks = build_delivery_tasks(cfg0, run_root, final_dir)
+function tasks = build_delivery_tasks(cfg0, run_root, final_dir, profile)
 tasks = empty_task();
 tasks(:) = [];
 
 iso_ids = {};
 vmf_ids = {};
 low_ids = {};
+
+if profile == "fullstream_waveform_screen"
+    low = cfg0.low_mimo;
+    screen_N_s = resolve_screen_stream_count(low, cfg0);
+    for snr = low.SNR_dB_list
+        id = sprintf('fullstream_waveform_screen_snr_%s', snr_tag(snr));
+        task_dir = fullfile(run_root, 'tasks', id);
+        low_override = low;
+        low_override.SNR_dB_list = snr;
+        override = struct('output_dir', task_dir, 'low_mimo', low_override, 'skip_plots', true);
+        tasks(end+1) = make_run_task(id, 'paperfig_low_mimo', snr, override, ...
+            fullfile(task_dir, 'atlas_v4_delivery_paperfig_low_mimo_*.mat'), ...
+            {}); %#ok<AGROW>
+        low_ids{end+1} = id; %#ok<AGROW>
+    end
+    tasks(end+1) = make_combine_task('combine_fullstream_waveform_screen', 'combine_low_mimo', ...
+        low_ids, fullfile(final_dir, 'atlas_v4_delivery_paperfig_low_mimo_resumable_*.mat'), ...
+        {fullfile(final_dir, 'figures', sprintf('ber_low_mimo_%dx%d_ns%d_precoding.png', ...
+            low.array_shape(1), low.array_shape(2), screen_N_s))}); %#ok<AGROW>
+    return;
+end
 
 for snr = cfg0.SNR_dB_list
     id = sprintf('ber_strict_isotropic_snr_%s', snr_tag(snr));
@@ -157,6 +194,19 @@ task = struct( ...
     'mat_pattern', '', ...
     'png_files', {{}}, ...
     'source_ids', {{}});
+end
+
+function N_s = resolve_screen_stream_count(low, cfg0)
+if ischar(low.N_s) || isstring(low.N_s)
+    if ~strcmpi(string(low.N_s), "full")
+        error('run_delivery_online_resumable:unknownScreenStreamRequest', ...
+            'String screen N_s request must be "full", got "%s".', string(low.N_s));
+    end
+    [~, N_s] = select_center_modes_2d(low.array_shape(1), low.array_shape(2), ...
+        0, cfg0.dx, cfg0.dy);
+else
+    N_s = low.N_s;
+end
 end
 
 function task = make_run_task(id, mode, snr_dB, cfg_override, mat_pattern, png_files)

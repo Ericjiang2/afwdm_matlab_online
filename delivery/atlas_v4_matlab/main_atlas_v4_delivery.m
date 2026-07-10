@@ -195,8 +195,14 @@ end
 
 low_mimo_results = [];
 if cfg_run.run_low_mimo_precoding
-    fprintf('\n[low-mimo] running %dx%d/Ns=%d waveform+precoding comparison...\n', ...
-        cfg_run.low_mimo.array_shape(1), cfg_run.low_mimo.array_shape(2), cfg_run.low_mimo.N_s);
+    requested_N_s = cfg_run.low_mimo.N_s;
+    if ischar(requested_N_s) || isstring(requested_N_s)
+        requested_N_s_label = char(string(requested_N_s));
+    else
+        requested_N_s_label = sprintf('%d', requested_N_s);
+    end
+    fprintf('\n[low-mimo] running %dx%d/Ns=%s waveform+precoding comparison...\n', ...
+        cfg_run.low_mimo.array_shape(1), cfg_run.low_mimo.array_shape(2), requested_N_s_label);
     low_mimo_results = run_low_mimo_precoding_ber(cfg_run);
 end
 

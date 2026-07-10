@@ -29,6 +29,17 @@ prototype can be run separately:
 run('delivery/atlas_v4_matlab/pilot_demo_embedded_channel_estimation.m')
 ```
 
+For the full-spatial-stream waveform screen agreed for the six-line comparison,
+run:
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
+```
+
+Its default is a 4x4 strict-isotropic high-Doppler screen with `N_s=m_s=11`
+from the main-paper centre ellipse, not the 16-bin overlap/nomask atlas set.
+It uses 20 frames per SNR point over `-10:5:20` dB and resumes per SNR point.
+
 ## Fallback Path: Zip Upload
 
 Upload `afwdm_v4_online_20260701_110728.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
