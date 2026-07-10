@@ -38,7 +38,9 @@ run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
 
 Its default is a 4x4 strict-isotropic high-Doppler screen with `N_s=m_s=11`
 from the main-paper centre ellipse, not the 16-bin overlap/nomask atlas set.
-It uses 20 frames per SNR point over `-10:5:20` dB and resumes per SNR point.
+It uses 200 frames per SNR point over `-10:5:20` dB and resumes per SNR
+point. The full default is 1,400 frames in total; based on the local smoke,
+allow roughly 35–40 minutes in MATLAB Online.
 
 ## Fallback Path: Zip Upload
 

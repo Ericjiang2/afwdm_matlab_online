@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260710-02] Increase Full-Stream Screen to 200 Frames per SNR
+
+**Changed**:
+- The default `fullstream_screen_numFrames` in
+  `run_online_fullstream_waveform_screen.m` is now `200` rather than `20`.
+
+**Why**:
+- The 20-frame screen can reveal a large error floor but has only 28,160 bits
+  at each SNR point, which is insufficient to distinguish a low high-SNR
+  plateau from zero observed errors.
+- A direct 20-frame spatial-channel diagnostic for the exact 4x4/
+  `N_s=m_s=11` setup found the 1D-DFT effective channel full rank (11/11) in
+  every frame, unlike the 8x8 DFT case (57/60). The longer BER run tests the
+  remaining statistical high-SNR behaviour, not a known structural rank loss.
+
+**Expected effect**:
+- The full sweep is 7 SNR points × 200 frames = 1,400 frames, approximately
+  35–40 minutes from the measured local one-frame timing. The runner remains
+  resumable per SNR point; a local smoke can still override the variable to 1.
+
+---
+
 ### [online-20260710-01] Full-Stream Six-Line Waveform Screen
 
 **Changed**:

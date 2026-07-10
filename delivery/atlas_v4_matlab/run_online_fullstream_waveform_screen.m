@@ -13,7 +13,7 @@ if ~exist('fullstream_screen_array_shape', 'var') || isempty(fullstream_screen_a
     fullstream_screen_array_shape = [4, 4];
 end
 if ~exist('fullstream_screen_numFrames', 'var') || isempty(fullstream_screen_numFrames)
-    fullstream_screen_numFrames = 20;
+    fullstream_screen_numFrames = 200;
 end
 if ~exist('fullstream_screen_SNR_dB_list', 'var') || isempty(fullstream_screen_SNR_dB_list)
     fullstream_screen_SNR_dB_list = -10:5:20;
