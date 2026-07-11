@@ -2,6 +2,7 @@
 results/online_runs/
 results/**/*.mat
 !results_seed/**/*.mat
+delivery/atlas_v4_matlab/outputs/
 
 # MATLAB / OS noise
 *.asv
