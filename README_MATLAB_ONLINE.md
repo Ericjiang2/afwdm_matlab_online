@@ -1,7 +1,7 @@
 # MATLAB Online Bundle
 
-Generated: 2026-07-01T03:07:28Z
-Commit marker: `348a43efc597f850a00e70481cbcee9f81a4ba86`
+Generated: 2026-07-11T12:14:06Z
+Commit marker: `6699d41a459f56b490590971521188b67e646bed`
 
 ## Recommended Path: Git First
 
@@ -12,39 +12,9 @@ Commit marker: `348a43efc597f850a00e70481cbcee9f81a4ba86`
 5. Run `run('run_online_smoke_v4.m')` first.
 6. If smoke passes, run `run('run_online_all_v4.m')` for a resumable full queue.
 
-## Delivery Figure Workflow
-
-The maintainable delivery-version scripts are mirrored under
-`delivery/atlas_v4_matlab/`. To generate the current four delivery figures, run:
-
-```matlab
-mode = "paperfig";
-run('delivery/atlas_v4_matlab/main_atlas_v4_delivery.m')
-```
-
-Outputs go to `delivery/atlas_v4_matlab/outputs/`. The standalone embedded-pilot
-prototype can be run separately:
-
-```matlab
-run('delivery/atlas_v4_matlab/pilot_demo_embedded_channel_estimation.m')
-```
-
-For the full-spatial-stream waveform screen agreed for the six-line comparison,
-run:
-
-```matlab
-run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
-```
-
-Its default is a 4x4 strict-isotropic high-Doppler screen with `N_s=m_s=11`
-from the main-paper centre ellipse, not the 16-bin overlap/nomask atlas set.
-It uses 200 frames per SNR point over `-10:5:20` dB and resumes per SNR
-point. The full default is 1,400 frames in total; based on the local smoke,
-allow roughly 35–40 minutes in MATLAB Online.
-
 ## Fallback Path: Zip Upload
 
-Upload `afwdm_v4_online_20260701_110728.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
+Upload `afwdm_v4_online_20260711_201406.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
 folder, then run the same online runner scripts from there.
 
 ## Results

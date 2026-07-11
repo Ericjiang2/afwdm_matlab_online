@@ -23,6 +23,40 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260711-01] Add Phase-G Channel-Estimation Production Runner (NMSE + Paired BER)
+
+**Changed**:
+- New public entry `run_online_phase_g_v1.m`: resumable Phase-G production run
+  for AFWDM vs MIMO-AFDM integer-DD embedded-pilot channel estimation.
+  - `nmse` task: pilot-SNR sweep `0:5:40` at fixed data SNR 15 dB, default
+    200 frames, all five estimators (full-grid/threshold LS/threshold
+    LMMSE/SOMP/oracle).
+  - `ber` task: paired operator-PCG BER for perfect_csi / full_grid_lmmse /
+    threshold_lmmse / somp_ls, data SNR `0:5:25`, both `SNR_p=SNR_d+10 dB`
+    (linked) and fixed `SNR_p=25 dB` floor diagnostic, default 50 frames.
+  - Per-(task, scenario, chunk) checkpoints under
+    `results/online_runs/<run_id>/checkpoints/`; re-running the same
+    `online_run_id` skips finished chunks and re-combines.
+  - `phase_g_smoke = true` gives a 1-frame local/Online sanity preset.
+- Bundled the eleven Phase-G dependency files (`run_phase_g_channel_estimation.m`,
+  `build_modal_dd_truth.m`, `build_modal_block_operator.m`, estimators, CFAR,
+  paired-BER helper, smoke gate) so the online repo stays self-contained.
+
+**Why**:
+- Stage-B/C production Monte Carlo runs on MATLAB Online per the main-repo
+  Phase-G design spec (cc-0711-01/02); local Mac only runs smokes.
+- Detection uses the matrix-free modal block operator with PCG on the normal
+  equations, so no branch materializes the `3840x3840` dense block matrix;
+  Mac cross-validation against dense-direct agreed within 10/7680 error bits
+  and all PCG solves converged (`tol 1e-6`, max iter 5000).
+
+**Result**:
+- Local Mac smoke from this repository copy: `PHASE_G_ONLINE_SMOKE_OK`
+  (1 frame, both tasks, checkpoints + combined MATs written, PCG flags all 0).
+- Expected Online cost at defaults: NMSE ~1.5 h, BER ~2.5-3.5 h, both
+  chunk-resumable. Not yet run in MATLAB Online; Eric runs
+  `run('run_online_phase_g_v1.m')` (optionally `phase_g_smoke = true` first).
+
 ### [online-20260710-02] Increase Full-Stream Screen to 200 Frames per SNR
 
 **Changed**:
