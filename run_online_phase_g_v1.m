@@ -8,7 +8,7 @@
 % and finally merges checkpoints into per-scenario combined MAT files.
 %
 % Optional overrides (set in the workspace before running):
-%   online_run_id             = 'phase_g_v1';      % keep fixed to resume
+%   online_run_id             = 'phase_g_v2';      % keep fixed to resume
 %   phase_g_task              = 'all';             % 'nmse' | 'ber' | 'all'
 %   phase_g_scenarios         = {'isotropic', 'vmf'};
 %   phase_g_nmse_frames       = 200;
@@ -25,7 +25,9 @@ clc;
 
 online_runner = 'run_online_phase_g_v1.m';
 if ~exist('online_run_id', 'var') || isempty(online_run_id)
-    online_run_id = 'phase_g_v1';
+    % v2: v1 checkpoints predate the cc-0711-05 nomask fix and must not be
+    % resumed; a fresh default id keeps a plain rerun from skipping chunks.
+    online_run_id = 'phase_g_v2';
 end
 if ~exist('phase_g_task', 'var') || isempty(phase_g_task)
     phase_g_task = 'all';

@@ -23,6 +23,31 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260711-02] Fix Phase-G Scenario Prep: Restore nomask/per-path Baseline (v1 Results Void)
+
+**Changed**:
+- `run_phase_g_channel_estimation.m` scenario prep now sets
+  `disable_prop_mask = true; use_perpath_sigma = true;` (paper-faithful v4
+  baseline flags, same as `run_online_full_v4.m`).
+- Default `online_run_id` bumped to `phase_g_v2` so a plain rerun cannot
+  silently resume the void `phase_g_v1` checkpoints.
+
+**Why**:
+- Eric caught it from the smoke BER table: without the flag the legacy
+  centre-ellipse mask zeroed the 13 edge-cell modes of the 60-mode iso pool,
+  fabricating dead streams and a fake perfect-CSI floor of `13/(2*60)=0.108`.
+  Under the adjudicated nomask baseline those edge modes carry 0.73-2.15x the
+  median energy (bowl-spectrum edge enrichment), so no dead streams exist.
+- vMF generation (per-path de-masked `Sigma2_p`) was never affected.
+
+**Result**:
+- Local regression 20/20; corrected 1-frame iso probe: perfect-CSI AFWDM
+  `8.9e-3 / 0 / 0` at data SNR `0/15/25 dB` (fake floor gone, AFWDM again
+  uniformly at or below MIMO-AFDM, consistent with Phase-E); estimated
+  threshold/SOMP at 25 dB: AFWDM `3.3e-3` vs MIMO-AFDM `3.9e-2`.
+- ALL `phase_g_v1` results (both tasks, both scenarios) are void; rerun
+  everything under `phase_g_v2` after pulling this commit.
+
 ### [online-20260711-01] Add Phase-G Channel-Estimation Production Runner (NMSE + Paired BER)
 
 **Changed**:

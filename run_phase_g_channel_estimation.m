@@ -38,6 +38,11 @@ function scenario = prepare_project_scenario(label)
     do_cap_p_sweep = false; %#ok<NASGU>
     prepare_scenario_only = true; %#ok<NASGU>
     channel_norm_mode = 'mrms'; %#ok<NASGU>
+    % Paper-faithful v4 baseline flags (F-F.3/F-F.4, same as run_online_full_v4):
+    % without disable_prop_mask the legacy centre-ellipse mask zeroes the 13
+    % edge-cell modes of the 60-mode pool and fabricates dead streams in iso.
+    disable_prop_mask = true; %#ok<NASGU>
+    use_perpath_sigma = true; %#ok<NASGU>
 
     if strcmpi(label, 'vmf')
         pas_config = '2cluster'; %#ok<NASGU>
