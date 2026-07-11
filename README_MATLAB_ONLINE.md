@@ -1,7 +1,7 @@
 # MATLAB Online Bundle
 
-Generated: 2026-07-11T12:14:06Z
-Commit marker: `6699d41a459f56b490590971521188b67e646bed`
+Generated: 2026-07-11T13:54:19Z
+Commit marker: `0d9607184cc17a440a6c54ef58f15f9dd66f49cc`
 
 ## Recommended Path: Git First
 
@@ -14,7 +14,7 @@ Commit marker: `6699d41a459f56b490590971521188b67e646bed`
 
 ## Fallback Path: Zip Upload
 
-Upload `afwdm_v4_online_20260711_201406.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
+Upload `afwdm_v4_online_20260711_215419.zip` to MATLAB Online or MATLAB Drive, unzip it, open the `src/`
 folder, then run the same online runner scripts from there.
 
 ## Results

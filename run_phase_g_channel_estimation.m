@@ -88,9 +88,8 @@ function out = evaluate_scenario(scenario, opts)
     oracle_support_exact = false(n_schemes, opts.num_frames);
 
     for frm = 1:opts.num_frames
-        seed_base = opts.seed_offset + 1000 * frm;
-        [tau_vec, nu_vec] = generate_phys_dd_paths(cfg, cfg.Lch, seed_base);
-        H_phys = generate_physical_taps(scenario, seed_base);
+        [tau_vec, nu_vec, H_phys, seed_base] = ...
+            generate_frame_realization(scenario, opts, frm);
         effective_support_size(frm) = size(unique( ...
             [tau_vec(:), nu_vec(:)], 'rows'), 1);
 
@@ -127,52 +126,37 @@ function out = evaluate_scenario(scenario, opts)
                 cached_opts = struct();
                 cached_opts.raw_modal_observations = ...
                     raw.raw_modal_observations;
+                spatial_variance = schemes.spatial_variance{i_scheme};
 
                 tic_ce = tic;
-                method_opts = cached_opts;
-                method_opts.method = 'full_grid_lmmse';
-                method_opts.spatial_variance = ...
-                    schemes.spatial_variance{i_scheme};
                 estimates{1} = estimate_modal_channel_ce( ...
-                    training, candidate_pairs, cfg, method_opts);
+                    training, candidate_pairs, cfg, ce_method_options( ...
+                    'full_grid_lmmse', cached_opts, spatial_variance, opts));
                 ce_time_s(i_scheme, 1, i_snr, frm) = raw_time + toc(tic_ce);
 
                 tic_ce = tic;
-                method_opts = cached_opts;
-                method_opts.method = 'threshold_ls';
-                method_opts.pfa_total = opts.pfa_total;
-                method_opts.correction = 'bonferroni';
                 estimates{2} = estimate_modal_channel_ce( ...
-                    training, candidate_pairs, cfg, method_opts);
+                    training, candidate_pairs, cfg, ce_method_options( ...
+                    'threshold_ls', cached_opts, spatial_variance, opts));
                 ce_time_s(i_scheme, 2, i_snr, frm) = raw_time + toc(tic_ce);
 
                 tic_ce = tic;
-                method_opts = cached_opts;
-                method_opts.method = 'threshold_lmmse';
-                method_opts.spatial_variance = ...
-                    schemes.spatial_variance{i_scheme};
-                method_opts.pfa_total = opts.pfa_total;
-                method_opts.correction = 'bonferroni';
                 estimates{3} = estimate_modal_channel_ce( ...
-                    training, candidate_pairs, cfg, method_opts);
+                    training, candidate_pairs, cfg, ce_method_options( ...
+                    'threshold_lmmse', cached_opts, spatial_variance, opts));
                 ce_time_s(i_scheme, 3, i_snr, frm) = raw_time + toc(tic_ce);
 
                 tic_ce = tic;
                 estimates{4} = estimate_modal_channel_somp( ...
-                    training, candidate_pairs, cfg, ...
-                    struct('pfa_total', opts.pfa_total, ...
-                           'correction', 'bonferroni', ...
-                           'residual_tolerance', 1e-10));
+                    training, candidate_pairs, cfg, somp_options(opts));
                 ce_time_s(i_scheme, 4, i_snr, frm) = toc(tic_ce);
 
                 tic_ce = tic;
-                method_opts = cached_opts;
-                method_opts.method = 'oracle_support_lmmse';
-                method_opts.spatial_variance = ...
-                    schemes.spatial_variance{i_scheme};
-                method_opts.oracle_mask = oracle_mask;
+                oracle_opts = ce_method_options( ...
+                    'oracle_support_lmmse', cached_opts, spatial_variance, opts);
+                oracle_opts.oracle_mask = oracle_mask;
                 estimates{5} = estimate_modal_channel_ce( ...
-                    training, candidate_pairs, cfg, method_opts);
+                    training, candidate_pairs, cfg, oracle_opts);
                 ce_time_s(i_scheme, 5, i_snr, frm) = raw_time + toc(tic_ce);
 
                 for i_method = 1:n_methods
@@ -315,9 +299,8 @@ function ber = evaluate_scenario_ber(scenario, opts)
     pilot_snr_used_db = nan(n_modes, n_snr);
 
     for frm = 1:opts.num_frames
-        seed_base = opts.seed_offset + 1000 * frm;
-        [tau_vec, nu_vec] = generate_phys_dd_paths(cfg, cfg.Lch, seed_base);
-        H_phys = generate_physical_taps(scenario, seed_base);
+        [tau_vec, nu_vec, H_phys, seed_base] = ...
+            generate_frame_realization(scenario, opts, frm);
 
         for i_scheme = 1:n_schemes
             truth = build_modal_dd_truth( ...
@@ -355,28 +338,16 @@ function ber = evaluate_scenario_ber(scenario, opts)
                     cached_opts = struct();
                     cached_opts.raw_modal_observations = ...
                         raw.raw_modal_observations;
+                    spatial_variance = schemes.spatial_variance{i_scheme};
 
-                    method_opts = cached_opts;
-                    method_opts.method = 'full_grid_lmmse';
-                    method_opts.spatial_variance = ...
-                        schemes.spatial_variance{i_scheme};
                     est_full = estimate_modal_channel_ce( ...
-                        training, candidate_pairs, cfg, method_opts);
-
-                    method_opts = cached_opts;
-                    method_opts.method = 'threshold_lmmse';
-                    method_opts.spatial_variance = ...
-                        schemes.spatial_variance{i_scheme};
-                    method_opts.pfa_total = opts.pfa_total;
-                    method_opts.correction = 'bonferroni';
+                        training, candidate_pairs, cfg, ce_method_options( ...
+                        'full_grid_lmmse', cached_opts, spatial_variance, opts));
                     est_threshold = estimate_modal_channel_ce( ...
-                        training, candidate_pairs, cfg, method_opts);
-
+                        training, candidate_pairs, cfg, ce_method_options( ...
+                        'threshold_lmmse', cached_opts, spatial_variance, opts));
                     est_somp = estimate_modal_channel_somp( ...
-                        training, candidate_pairs, cfg, ...
-                        struct('pfa_total', opts.pfa_total, ...
-                               'correction', 'bonferroni', ...
-                               'residual_tolerance', 1e-10));
+                        training, candidate_pairs, cfg, somp_options(opts));
 
                     detectors = struct();
                     detectors.names = detector_names;
@@ -392,13 +363,11 @@ function ber = evaluate_scenario_ber(scenario, opts)
                     noise = sqrt(noise_variance / 2) * ...
                         (randn(cfg.Nblk * d, 1) + ...
                          1i * randn(cfg.Nblk * d, 1));
-                    tic_detect = tic;
                     paired = simulate_paired_csi_ber( ...
                         H_true, detectors, 4, data_snr, ...
                         struct('bits', bits, 'noise', noise, ...
                                'solver', ber_solver, 'pcg_tol', pcg_tol, ...
                                'pcg_max_iter', pcg_max_iter));
-                    elapsed = toc(tic_detect);
 
                     error_bits(i_scheme, :, i_mode, i_snr, frm) = ...
                         paired.error_bits;
@@ -407,7 +376,7 @@ function ber = evaluate_scenario_ber(scenario, opts)
                     solver_iter(i_scheme, :, i_mode, i_snr, frm) = ...
                         paired.solver_iter;
                     detect_time_s(i_scheme, :, i_mode, i_snr, frm) = ...
-                        elapsed / n_detectors;
+                        paired.solve_time_s;
                 end
             end
         end
@@ -445,6 +414,45 @@ function value = get_option(opts, name, default)
     else
         value = default;
     end
+end
+
+function [tau_vec, nu_vec, H_phys, seed_base] = ...
+        generate_frame_realization(scenario, opts, frm)
+% Single source of the per-frame channel realization so the NMSE and BER
+% tasks are guaranteed to see identical channels for the same frame index.
+    seed_base = opts.seed_offset + 1000 * frm;
+    [tau_vec, nu_vec] = generate_phys_dd_paths( ...
+        scenario.cfg, scenario.cfg.Lch, seed_base);
+    H_phys = generate_physical_taps(scenario, seed_base);
+end
+
+function method_opts = ce_method_options(method, cached_opts, spatial_variance, opts)
+% Single source of each estimator's information boundary, shared by the NMSE
+% and BER loops. Practical estimators receive only the aggregate PAS variance
+% and CFAR settings; the oracle mask is added separately by the caller.
+    method_opts = cached_opts;
+    method_opts.method = method;
+    switch method
+        case 'full_grid_lmmse'
+            method_opts.spatial_variance = spatial_variance;
+        case 'threshold_ls'
+            method_opts.pfa_total = opts.pfa_total;
+            method_opts.correction = 'bonferroni';
+        case 'threshold_lmmse'
+            method_opts.spatial_variance = spatial_variance;
+            method_opts.pfa_total = opts.pfa_total;
+            method_opts.correction = 'bonferroni';
+        case 'oracle_support_lmmse'
+            method_opts.spatial_variance = spatial_variance;
+        otherwise
+            error('run_phase_g_channel_estimation:unknownCeMethod', ...
+                'No option template for CE method "%s".', method);
+    end
+end
+
+function somp_opts = somp_options(opts)
+    somp_opts = struct('pfa_total', opts.pfa_total, ...
+        'correction', 'bonferroni', 'residual_tolerance', 1e-10);
 end
 
 function symbols = random_qpsk(N, d_s, T)

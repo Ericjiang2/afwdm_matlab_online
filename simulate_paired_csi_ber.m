@@ -13,9 +13,11 @@ function result = simulate_paired_csi_ber(H_true, detectors, qam_order, snr_db, 
     solver_flag = zeros(1, n_detectors);
     solver_relres = zeros(1, n_detectors);
     solver_iter = zeros(1, n_detectors);
+    solve_time_s = zeros(1, n_detectors);
 
     for j = 1:n_detectors
         H_detector = detectors.H{j};
+        t_solve = tic;
         switch lower(opts.solver)
             case 'direct'
                 if isstruct(H_detector)
@@ -36,6 +38,7 @@ function result = simulate_paired_csi_ber(H_true, detectors, qam_order, snr_db, 
                 error('simulate_paired_csi_ber:unknownSolver', ...
                     'Unsupported detector solver "%s".', opts.solver);
         end
+        solve_time_s(j) = toc(t_solve);
         bits_est{j} = qam_demodulate(x_est{j}, qam_order);
         error_bits(j) = sum(bits_est{j} ~= bits);
     end
@@ -52,6 +55,7 @@ function result = simulate_paired_csi_ber(H_true, detectors, qam_order, snr_db, 
     result.solver_flag = solver_flag;
     result.solver_relres = solver_relres;
     result.solver_iter = solver_iter;
+    result.solve_time_s = solve_time_s;
     result.total_bits = numel(bits);
     result.ber = error_bits / numel(bits);
 end
