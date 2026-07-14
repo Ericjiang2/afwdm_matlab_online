@@ -20,7 +20,9 @@ verifyEqual(testCase, cfg.fc, 4e9);
 verifyEqual(testCase, cfg.Deltaf, 2e3);
 verifyEqual(testCase, cfg.time_diversity.N_s, 11);
 verifyEqual(testCase, cfg.time_diversity.doppler_modes, {'integer', 'fractional'});
-verifyEqual(testCase, cfg.time_diversity.detectors, {'block_lmmse'});
+verifyEqual(testCase, cfg.time_diversity.detectors, {'block_lmmse', 'gabp'});
+verifyEqual(testCase, cfg.time_diversity.gabp.damping, 0.4);
+verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 15);
 verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, 12);
 verifyEqual(testCase, cfg.time_diversity.max_frames, 1);
 end

@@ -56,6 +56,25 @@ verifyFalse(testCase, first.noise_limited);
 verifyTrue(testCase, first.claim_eligible);
 end
 
+function testGabpUsesOneHyperparameterContractForBothArms(testCase)
+cfg = minimal_cfg();
+H = eye(cfg.Nblk * cfg.Nstreams);
+gabp = struct('damping', 0.4, 'max_iterations', 15, ...
+    'tolerance', 1e-5, 'edge_threshold_rel', 0, 'regularization', 1e-10);
+opts = struct( ...
+    'bits', logical([0; 0; 0; 1; 1; 0; 1; 1]), ...
+    'unit_noise', zeros(size(H, 1), 1), ...
+    'detector', 'gabp', ...
+    'detector_options', gabp);
+
+pair = simulate_paired_waveform_frame(cfg, H, cfg, H, 4, 30, opts);
+
+verifyEqual(testCase, pair.error_a, pair.error_b);
+verifyEqual(testCase, pair.detector_a.damping, pair.detector_b.damping);
+verifyEqual(testCase, pair.detector_a.max_iterations, pair.detector_b.max_iterations);
+verifyEqual(testCase, pair.detector_a.edge_threshold_rel, pair.detector_b.edge_threshold_rel);
+end
+
 function cfg = minimal_cfg()
 cfg = struct();
 cfg.Nblk = 2;

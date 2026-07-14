@@ -23,6 +23,27 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-04] Run GaBP Beside LMMSE on the Same Paired Frames
+
+**Changed**:
+- The time-diversity profiles now schedule `block_lmmse` and `gabp` together
+  for both integer and fractional Doppler.
+- Both waveform arms and both detectors reuse the same deterministic frame
+  seeds, shared bits, and shared unit noise. GaBP uses one locked contract:
+  damping 0.4, 15 iterations, tolerance `1e-4`, no edge truncation.
+
+**Why**:
+- The approved comparison makes GaBP co-primary, not a fallback, and forbids
+  waveform-specific detector tuning or hiding the LMMSE result.
+
+**Result**:
+- MATLAB R2025a: 9/9 tests passed. A full-`N_s=11` one-frame smoke completed
+  all four integer/fractional x LMMSE/GaBP runs with finite iteration metrics
+  and printed `TIME_DIVERSITY_COPRIMARY_SMOKE_OK`. Production curves remain an
+  external MATLAB Online run.
+
+---
+
 ### [online-20260715-03] Add Damped Gaussian MP for MIMO-DD Blocks
 
 **Changed**:
