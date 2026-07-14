@@ -38,6 +38,8 @@ run_online_time_diversity();
 
 它使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
+每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，
+必须换新的 run id，禁止静默混用旧 checkpoint。
 正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK、`12:2:28 dB`，同时跑
 integer/fractional Doppler 与 block-LMMSE/GaBP。基线包含 WDM 主隔离、DFT
 robustness 和 SVD 附录；条件升级只跑证据触发的 Doppler 子场景和 WDM 主对。

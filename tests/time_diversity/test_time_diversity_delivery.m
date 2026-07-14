@@ -80,6 +80,10 @@ resumed = run_online_time_diversity( ...
 after = dir(checkpoint);
 verifyEqual(testCase, after.datenum, before.datenum);
 verifyEqual(testCase, resumed.metadata.run_id, 'unit_test_run');
+
+verifyError(testCase, @() run_online_time_diversity( ...
+    "time_diversity_online", "unit_test_run", out_root), ...
+    'run_online_time_diversity:manifestMismatch');
 end
 
 function runs = synthetic_runs(spatial_pair)

@@ -42,8 +42,14 @@ final_dir = fullfile(run_root, 'final');
 ensure_dir(checkpoint_dir);
 ensure_dir(final_dir);
 final_mat = fullfile(final_dir, 'time_diversity_final.mat');
+run_manifest = build_time_diversity_run_manifest(cfg0, 'run');
 if isfile(final_mat)
-    loaded = load(final_mat, 'package');
+    loaded = load(final_mat, 'package', 'run_manifest');
+    if ~isfield(loaded, 'run_manifest')
+        error('run_online_time_diversity:manifestMismatch', ...
+            'Final MAT has no immutable run manifest; use a new run_id.');
+    end
+    validate_time_diversity_run_manifest(run_manifest, loaded.run_manifest, 'final MAT');
     package = loaded.package;
     return;
 end
@@ -95,7 +101,7 @@ for ii = 1:numel(stages)
     writetable(stage_table, fullfile(final_dir, ...
         sprintf('time_diversity_summary_%s.csv', stages{ii}.name)));
 end
-save(final_mat, 'package', 'cfg0', '-v7');
+save(final_mat, 'package', 'cfg0', 'run_manifest', '-v7');
 fprintf('Time-diversity final package: %s\n', final_mat);
 end
 
@@ -103,6 +109,7 @@ function results = run_stage(cfg_stage, stage_name, checkpoint_dir)
 snrs = cfg_stage.time_diversity.SNR_dB_list;
 snrs = sort(snrs);
 packs = cell(1, numel(snrs));
+stage_manifest = build_time_diversity_run_manifest(cfg_stage, stage_name);
 for ii = 1:numel(snrs)
     snr_db = snrs(ii);
     checkpoint_file = fullfile(checkpoint_dir, sprintf('%s_snr_%s.mat', ...
@@ -110,9 +117,15 @@ for ii = 1:numel(snrs)
     if isfile(checkpoint_file)
         loaded = load(checkpoint_file, 'checkpoint');
         checkpoint = loaded.checkpoint;
+        if ~isfield(checkpoint, 'manifest')
+            error('run_online_time_diversity:manifestMismatch', ...
+                'Checkpoint has no immutable run manifest: %s.', checkpoint_file);
+        end
+        validate_time_diversity_run_manifest( ...
+            stage_manifest, checkpoint.manifest, checkpoint_file);
         if checkpoint.snr_db ~= snr_db || ~strcmp(checkpoint.stage, stage_name)
-            error('run_online_time_diversity:checkpointMismatch', ...
-                'Checkpoint metadata mismatch: %s.', checkpoint_file);
+            error('run_online_time_diversity:manifestMismatch', ...
+                'Checkpoint stage/SNR mismatch: %s.', checkpoint_file);
         end
         fprintf('  SKIP %s SNR=%g dB\n', stage_name, snr_db);
     else
@@ -120,6 +133,7 @@ for ii = 1:numel(snrs)
         cfg_one = cfg_stage;
         cfg_one.time_diversity.SNR_dB_list = snr_db;
         checkpoint = struct('stage', stage_name, 'snr_db', snr_db, ...
+            'manifest', stage_manifest, ...
             'results', run_time_diversity_ber(cfg_one));
         save(checkpoint_file, 'checkpoint', '-v7');
     end

@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-09] Fail Closed on Resume Identity Mismatch
+
+**Changed**:
+- Added immutable run/stage manifests with schema and runner versions, profile,
+  physical/time-diversity config fingerprint, code-content fingerprint, Git
+  commit, MATLAB release, seed contract, Doppler/detector/spatial sets, Lch,
+  and the SNR grid.
+- Final MAT and per-SNR checkpoints are validated before reuse. Missing or
+  mismatched manifests now raise an explicit error requiring a new run id.
+
+**Why**:
+- A stage/SNR filename alone cannot prove that an old artifact belongs to the
+  current scientific configuration or code. Silent cross-config reuse would
+  invalidate a resumed production result.
+
+**Result**:
+- TDD first reproduced silent reuse of a smoke final MAT by the production
+  profile. The end-to-end smoke now resumes an identical run without rewriting
+  its checkpoint and rejects the changed profile with `manifestMismatch`.
+
+---
+
 ### [online-20260715-08] Gate Scientific Completion on Paired Significance
 
 **Changed**:
