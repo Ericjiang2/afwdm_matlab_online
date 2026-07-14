@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-08] Gate Scientific Completion on Paired Significance
+
+**Changed**:
+- Added a decision record that requires both co-primary detectors to have a
+  finite fixed-BER gain, sufficient errors, BER-ratio CI wholly above one,
+  and McNemar `p<0.05` before a Doppler result is claim-eligible.
+- Statistically inconclusive evidence now returns `await_evidence`; significant
+  sub-dB evidence alone can trigger the approved escalation sequence.
+
+**Why**:
+- Error-count sufficiency and a finite interpolated gain do not establish a
+  paired scientific result. The production state machine must not declare
+  completion when the confidence interval crosses one or McNemar is not
+  significant.
+
+**Result**:
+- TDD reproduced the significance-blind completion path, then seven escalation
+  tests passed, including insignificant gain, significant completion, and
+  significant sub-dB escalation contracts. Changed-file checkcode is clean.
+
+---
+
 ### [online-20260715-07] Add Resumable Time-Diversity Delivery Entry
 
 **Changed**:

@@ -57,7 +57,7 @@ stages = cell(1, 3);
 stage_count = 0;
 
 while true
-    gains = gain_records(current_results.summary_table, ...
+    gains = build_time_diversity_gain_records(current_results.summary_table, ...
         current_cfg.time_diversity.doppler_modes);
     plan = resolve_time_diversity_escalation(current_stage, gains, cfg0);
     if ismember(plan.next_stage, {'complete', 'await_evidence', 'fail_closed'})
@@ -158,25 +158,6 @@ function same = same_run_identity(a, b)
 same = strcmp(a.doppler_mode, b.doppler_mode) && ...
     strcmp(a.detector, b.detector) && strcmp(a.spatial_pair, b.spatial_pair) && ...
     a.Lch == b.Lch && a.kmax == b.kmax;
-end
-
-function gains = gain_records(summary, doppler_modes)
-empty = struct('doppler_mode', '', 'gain_db', NaN, 'claim_eligible', false);
-gains = repmat(empty, 1, numel(doppler_modes));
-for ii = 1:numel(doppler_modes)
-    mode = doppler_modes{ii};
-    selected = strcmp(summary.doppler_mode, mode) & ...
-        ismember(summary.detector, {'block_lmmse', 'gabp'});
-    values = summary.snr_gain_db(selected);
-    eligible = numel(values) == 2 && all(isfinite(values)) && ...
-        all(~summary.noise_limited(selected));
-    gains(ii).doppler_mode = mode;
-    gains(ii).claim_eligible = eligible;
-    if eligible
-        % Both co-primary detectors must remain below 1 dB to escalate.
-        gains(ii).gain_db = max(values);
-    end
-end
 end
 
 function tag = snr_tag(value)

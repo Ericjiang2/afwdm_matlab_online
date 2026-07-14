@@ -46,6 +46,39 @@ verifyEqual(testCase, plan.next_stage, 'await_evidence');
 verifyEmpty(testCase, plan.triggered_doppler_modes);
 end
 
+function testScientificCompletionRequiresCiAndMcnemar(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+summary = significance_summary([1.2, 1.3], [0.9, 1.1], [0.01, 0.01]);
+
+gains = build_time_diversity_gain_records(summary, {'fractional'});
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+verifyFalse(testCase, gains.claim_eligible);
+verifyEqual(testCase, plan.next_stage, 'await_evidence');
+end
+
+function testScientificCompletionAcceptsTwoSignificantDetectors(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+summary = significance_summary([1.2, 1.3], [1.05, 1.10], [0.01, 0.02]);
+
+gains = build_time_diversity_gain_records(summary, {'fractional'});
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+verifyTrue(testCase, gains.claim_eligible);
+verifyEqual(testCase, plan.next_stage, 'complete');
+end
+
+function testSignificantSubDbEvidenceTriggersEscalation(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+summary = significance_summary([0.5, 0.7], [1.05, 1.10], [0.01, 0.02]);
+
+gains = build_time_diversity_gain_records(summary, {'fractional'});
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+verifyTrue(testCase, gains.claim_eligible);
+verifyEqual(testCase, plan.next_stage, 'lch8');
+end
+
 function testPerStreamLmmseRemainsSupplementalAndDeterministic(testCase)
 cfg = minimal_cfg();
 H = eye(cfg.Nblk * cfg.Nstreams);
@@ -83,4 +116,13 @@ function cfg = minimal_cfg()
 cfg = struct('Nblk', 2, 'ms', 2, 'mr', 2, 'Nstreams', 2, ...
     'Fbb_wdm', [], 'Wbb_wdm', [], 'block_lmmse_solver', 'direct', ...
     'pcg_tol', 1e-8, 'pcg_max_iter', 50);
+end
+
+function summary = significance_summary(gains, ci_low, p_values)
+summary = table( ...
+    {'fractional'; 'fractional'}, ...
+    {'block_lmmse'; 'gabp'}, ...
+    gains(:), ci_low(:), [2; 2], p_values(:), [false; false], ...
+    'VariableNames', {'doppler_mode', 'detector', 'snr_gain_db', ...
+    'ratio_ci_low', 'ratio_ci_high', 'mcnemar_p', 'noise_limited'});
 end
