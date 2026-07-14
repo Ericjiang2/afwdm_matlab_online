@@ -7,18 +7,25 @@ end
 if ~exist(output_dir, 'dir')
     mkdir(output_dir);
 end
-primary_lch = max([results.runs.Lch]);
+lch_values = unique([results.runs.Lch]);
+if isscalar(lch_values)
+    lch_label = sprintf('%d', lch_values);
+else
+    lch_label = 'latest per subscenario';
+end
 main_file = fullfile(output_dir, [file_prefix '_mimo_main.png']);
 appendix_file = fullfile(output_dir, [file_prefix '_svd_appendix.png']);
 table_file = fullfile(output_dir, [file_prefix '_summary.csv']);
 
-plot_pair_grid(results.runs, primary_lch, {'wdm', 'dft'}, main_file, ...
-    sprintf('AFWDM vs OFWDM MIMO BER (N_s=%d, Lch=%d)', results.N_s, primary_lch));
+plot_pair_grid(results.runs, {'wdm', 'dft'}, main_file, ...
+    sprintf('AFWDM vs OFWDM MIMO BER (N_s=%d, Lch=%s)', results.N_s, lch_label));
 writetable(results.summary_table, table_file);
 files = {main_file, table_file};
 if any(strcmp({results.runs.spatial_pair}, 'svd'))
-    plot_pair_grid(results.runs, primary_lch, {'svd'}, appendix_file, ...
-        sprintf('SVD-pair appendix (N_s=%d, Lch=%d)', results.N_s, primary_lch));
+    svd_runs = results.runs(strcmp({results.runs.spatial_pair}, 'svd'));
+    svd_lch = max([svd_runs.Lch]);
+    plot_pair_grid(results.runs, {'svd'}, appendix_file, ...
+        sprintf('SVD-pair appendix (N_s=%d, Lch=%d)', results.N_s, svd_lch));
     files{end+1} = appendix_file;
 end
 
@@ -27,7 +34,7 @@ if isfield(cfg_run, 'mode') && strcmp(cfg_run.mode, 'time_diversity_smoke')
 end
 end
 
-function plot_pair_grid(runs, Lch, spatial_pairs, output_file, title_text)
+function plot_pair_grid(runs, spatial_pairs, output_file, title_text)
 doppler_modes = {'integer', 'fractional'};
 detectors = {'block_lmmse', 'gabp'};
 fig = figure('Visible', 'off', 'Color', 'w', 'Position', [100, 100, 1100, 760]);
@@ -43,13 +50,14 @@ for iDoppler = 1:2
         labels = {};
         for iSpatial = 1:numel(spatial_pairs)
             spatial = spatial_pairs{iSpatial};
-            match = find([runs.Lch] == Lch & ...
-                strcmp({runs.doppler_mode}, doppler_modes{iDoppler}) & ...
+            candidates = find(strcmp({runs.doppler_mode}, doppler_modes{iDoppler}) & ...
                 strcmp({runs.detector}, detectors{iDetector}) & ...
-                strcmp({runs.spatial_pair}, spatial), 1);
-            if isempty(match)
+                strcmp({runs.spatial_pair}, spatial));
+            if isempty(candidates)
                 continue;
             end
+            [~, newest] = max([runs(candidates).Lch]);
+            match = candidates(newest);
             run = runs(match);
             afwdm = eligible_curve(run.points, 'ber_a');
             ofwdm = eligible_curve(run.points, 'ber_b');

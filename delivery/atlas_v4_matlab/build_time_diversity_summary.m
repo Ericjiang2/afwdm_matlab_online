@@ -1,7 +1,13 @@
 function summary = build_time_diversity_summary(runs, primary_lch, target_ber)
 %BUILD_TIME_DIVERSITY_SUMMARY Four-row int/frac x LMMSE/GaBP claim table.
 
-primary = runs([runs.Lch] == primary_lch & strcmp({runs.spatial_pair}, 'wdm'));
+if isempty(primary_lch)
+    primary = runs(strcmp({runs.spatial_pair}, 'wdm'));
+    missing_lch = NaN;
+else
+    primary = runs([runs.Lch] == primary_lch & strcmp({runs.spatial_pair}, 'wdm'));
+    missing_lch = primary_lch;
+end
 doppler_modes = {'integer', 'fractional'};
 detectors = {'block_lmmse', 'gabp'};
 rows = cell(4, 12);
@@ -14,7 +20,7 @@ for iDoppler = 1:2
             strcmp({primary.detector}, detectors{iDetector}), 1);
         if isempty(match)
             rows(row, :) = {doppler_modes{iDoppler}, detectors{iDetector}, ...
-                primary_lch, target_ber, NaN, NaN, NaN, NaN, NaN, true, false, 'missing'};
+                missing_lch, target_ber, NaN, NaN, NaN, NaN, NaN, true, false, 'missing'};
             continue;
         end
         run = primary(match);
@@ -46,7 +52,7 @@ for iDoppler = 1:2
             status = 'eligible';
         end
         rows(row, :) = {doppler_modes{iDoppler}, detectors{iDetector}, ...
-            primary_lch, target_ber, gain, ratio, ci(1), ci(2), p, ...
+            run.Lch, target_ber, gain, ratio, ci(1), ci(2), p, ...
             noise_limited, monotonic, status};
     end
 end

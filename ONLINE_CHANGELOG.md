@@ -23,6 +23,27 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-12] Compose Final Results per Subscenario
+
+**Changed**:
+- Canonical final results now start from the complete Lch=6 baseline and
+  replace only matching Doppler/detector/WDM records with the newest
+  conditional-stage evidence.
+- Untriggered Doppler modes, DFT robustness, and the SVD appendix remain in
+  the final package and figures. Summary rows report each record's actual Lch.
+
+**Why**:
+- Conditional stages are intentionally Doppler-specific and WDM-only. Taking
+  the last stage wholesale dropped the other Doppler plus both robustness
+  comparisons from the most visible final artifacts.
+
+**Result**:
+- TDD reproduces a one-Doppler Lch=8 upgrade and verifies 12 final paired
+  records, Lch=8 only for upgraded integer WDM, Lch=6 fractional WDM, retained
+  DFT/SVD records, and a complete four-row summary. Changed files are clean.
+
+---
+
 ### [online-20260715-11] Preserve Independent Doppler Outcomes
 
 **Changed**:

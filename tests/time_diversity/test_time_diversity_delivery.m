@@ -92,14 +92,36 @@ verifyError(testCase, @() run_online_time_diversity( ...
 end
 
 function testLastEscalationStageBecomesCanonicalFinal(testCase)
-baseline = struct('token', 'baseline');
-stages = {struct('name', 'lch8', 'results', struct('token', 'lch8')), ...
-    struct('name', 'kmax3', 'results', struct('token', 'kmax3'))};
+baseline_runs = [synthetic_runs('wdm'), synthetic_runs('dft'), ...
+    synthetic_runs('svd')];
+baseline = struct('runs', baseline_runs, 'N_s', 11, 'Nblk', 64, ...
+    'array_shape', [4, 4], 'summary_table', ...
+    build_time_diversity_summary(baseline_runs, 6, 1e-3), ...
+    'lch_comparison', []);
+stage_runs = synthetic_runs('wdm');
+stage_runs = stage_runs(strcmp({stage_runs.doppler_mode}, 'integer'));
+for ii = 1:numel(stage_runs)
+    stage_runs(ii).Lch = 8;
+end
+stage_result = baseline;
+stage_result.runs = stage_runs;
+stage_result.summary_table = build_time_diversity_summary(stage_runs, 8, 1e-3);
+stages = {struct('name', 'lch8', 'results', stage_result)};
 
 [final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
 
-verifyEqual(testCase, final_results.token, 'kmax3');
-verifyEqual(testCase, final_stage, 'kmax3');
+verifyEqual(testCase, final_stage, 'lch8');
+verifyEqual(testCase, numel(final_results.runs), 12);
+integer_wdm = strcmp({final_results.runs.doppler_mode}, 'integer') & ...
+    strcmp({final_results.runs.spatial_pair}, 'wdm');
+fractional_wdm = strcmp({final_results.runs.doppler_mode}, 'fractional') & ...
+    strcmp({final_results.runs.spatial_pair}, 'wdm');
+verifyEqual(testCase, unique([final_results.runs(integer_wdm).Lch]), 8);
+verifyEqual(testCase, unique([final_results.runs(fractional_wdm).Lch]), 6);
+verifyEqual(testCase, sum(strcmp({final_results.runs.spatial_pair}, 'dft')), 4);
+verifyEqual(testCase, sum(strcmp({final_results.runs.spatial_pair}, 'svd')), 4);
+verifyEqual(testCase, height(final_results.summary_table), 4);
+verifyFalse(testCase, any(strcmp(final_results.summary_table.status, 'missing')));
 end
 
 function testNonmonotonicBerIsDiagnosedInsteadOfInterpolated(testCase)
