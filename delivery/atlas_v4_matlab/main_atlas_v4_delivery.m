@@ -206,6 +206,12 @@ if cfg_run.run_low_mimo_precoding
     low_mimo_results = run_low_mimo_precoding_ber(cfg_run);
 end
 
+time_diversity_results = [];
+if cfg_run.run_time_diversity
+    fprintf('\n[time-diversity] running strictly paired AFWDM/OFWDM experiment...\n');
+    time_diversity_results = run_time_diversity_ber(cfg_run);
+end
+
 %% 4. 保存 .mat 和 .png
 results = struct();
 results.BER = BER;
@@ -222,6 +228,7 @@ results.Ns_used = Ns_used;
 results.mode_summary = mode_summary;
 results.capacity = capacity_results;
 results.low_mimo = low_mimo_results;
+results.time_diversity = time_diversity_results;
 
 metadata = struct();
 metadata.mode = cfg_run.mode;

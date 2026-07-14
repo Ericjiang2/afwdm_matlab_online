@@ -101,6 +101,10 @@ cfg_run.low_mimo = struct( ...
     'scenario', struct('label', 'low_mimo_strict_isotropic', ...
         'pas_model', 'isotropic', 'cv', 1.0, 'use_perpath_sigma', false));
 
+% AFWDM-vs-OFWDM time-diversity experiment (disabled outside its modes).
+cfg_run.run_time_diversity = false;
+cfg_run.time_diversity = struct();
+
 switch mode
     case "quick"
         % 老师最关心的最小演示: perfect CSI + isotropic-like BER.
@@ -195,6 +199,41 @@ switch mode
         cfg_run.capacity_scenarios = vmf_capacity_scenarios([0.01, 0.30, 1.00]);
         cfg_run.quick_stream_cap = [];
 
+    case {"time_diversity_smoke", "time_diversity_online"}
+        cfg_run.array_shape = [4, 4];
+        cfg_run.v_max_kmh = 860;      % kmax=2 at fc=4 GHz, Deltaf=2 kHz.
+        cfg_run.tau_max_us = 32;      % lmax=5; diversity lhs=29<64.
+        cfg_run.quick_stream_cap = [];
+        cfg_run.numFrames_BER = 0;
+        cfg_run.SNR_dB_list = [];
+        cfg_run.kappa_list = 0;
+        cfg_run.strategies = {'full'};
+        cfg_run.ber_scenarios = empty_scenario_list();
+        cfg_run.run_capacity = false;
+        cfg_run.run_low_mimo_precoding = false;
+        cfg_run.run_time_diversity = true;
+        cfg_run.time_diversity = struct( ...
+            'N_s', 11, ...
+            'scenario', struct('label', 'time_diversity_strict_isotropic', ...
+                'pas_model', 'isotropic', 'cv', 1.0, 'use_perpath_sigma', false), ...
+            'doppler_modes', {{'integer', 'fractional'}}, ...
+            'detectors', {{'block_lmmse'}}, ...
+            'spatial_pairs', {{'wdm'}}, ...
+            'SNR_dB_list', 12:2:28, ...
+            'target_errors', 100, ...
+            'min_frames', 10, ...
+            'max_frames', 1500, ...
+            'bootstrap_samples', 2000, ...
+            'bootstrap_seed', 20260715, ...
+            'seed_base', 1700000, ...
+            'bits_seed_offset', 17000000);
+        if mode == "time_diversity_smoke"
+            cfg_run.time_diversity.SNR_dB_list = 12;
+            cfg_run.time_diversity.min_frames = 1;
+            cfg_run.time_diversity.max_frames = 1;
+            cfg_run.time_diversity.bootstrap_samples = 200;
+        end
+
     case {"paperfig", "paperfig_iso", "paperfig_vmf", "paperfig_capacity", "paperfig_low_mimo"}
         % 新交付主图模式:
         %   Fig.1 strict isotropic: perfect CSI + fixed_var CSI in one plot.
@@ -247,7 +286,7 @@ switch mode
     otherwise
         error('make_delivery_config:unknownMode', ...
             ['Unknown mode "%s". Use quick, smoke, fullmini, local2min, paper, ' ...
-             'paperfig, paperfig_iso, paperfig_vmf, paperfig_capacity, or paperfig_low_mimo.'], mode);
+             'paperfig*, time_diversity_smoke, or time_diversity_online.'], mode);
 end
 
 end

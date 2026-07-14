@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-02] Add Full-Stream AFWDM/OFWDM Time-Diversity Baseline
+
+**Changed**:
+- Added `time_diversity_smoke` and `time_diversity_online` profiles with the
+  locked `4x4`, `N_s=m_s=11`, `Nblk=64`, 4 GHz, 2 kHz configuration.
+- Added a pure waveform pair builder: AFWDM and OFWDM share the selected WDM
+  spatial basis and differ only in `c1/c2`.
+- Added the strictly paired integer/fractional block-LMMSE runner. Both Doppler
+  modes reuse the same frame seeds; the production grid is `12:2:28 dB` with
+  error-target stopping up to 1500 frames.
+
+**Why**:
+- The prior low-MIMO screen mixed six independently randomized scheme calls,
+  which obscured the temporal waveform effect and starved the high-SNR points.
+
+**Result**:
+- MATLAB R2025a: two configuration/isolation contracts passed. A real one-frame
+  full-`N_s=11` smoke completed both integer and fractional runs and printed
+  `TIME_DIVERSITY_BASELINE_SMOKE_OK`. Production Online curves were not run.
+
+---
+
 ### [online-20260715-01] Add Strictly Paired BER Statistics Harness
 
 **Changed**:
