@@ -1,20 +1,26 @@
-function files = plot_time_diversity_results(results, cfg_run, output_dir)
+function files = plot_time_diversity_results(results, cfg_run, output_dir, file_prefix)
 %PLOT_TIME_DIVERSITY_RESULTS MIMO main/appendix figures and four-row table.
 
+if nargin < 4 || isempty(file_prefix)
+    file_prefix = 'time_diversity';
+end
 if ~exist(output_dir, 'dir')
     mkdir(output_dir);
 end
 primary_lch = max([results.runs.Lch]);
-main_file = fullfile(output_dir, 'time_diversity_mimo_main.png');
-appendix_file = fullfile(output_dir, 'time_diversity_svd_appendix.png');
-table_file = fullfile(output_dir, 'time_diversity_summary.csv');
+main_file = fullfile(output_dir, [file_prefix '_mimo_main.png']);
+appendix_file = fullfile(output_dir, [file_prefix '_svd_appendix.png']);
+table_file = fullfile(output_dir, [file_prefix '_summary.csv']);
 
 plot_pair_grid(results.runs, primary_lch, {'wdm', 'dft'}, main_file, ...
     sprintf('AFWDM vs OFWDM MIMO BER (N_s=%d, Lch=%d)', results.N_s, primary_lch));
-plot_pair_grid(results.runs, primary_lch, {'svd'}, appendix_file, ...
-    sprintf('SVD-pair appendix (N_s=%d, Lch=%d)', results.N_s, primary_lch));
 writetable(results.summary_table, table_file);
-files = {main_file, appendix_file, table_file};
+files = {main_file, table_file};
+if any(strcmp({results.runs.spatial_pair}, 'svd'))
+    plot_pair_grid(results.runs, primary_lch, {'svd'}, appendix_file, ...
+        sprintf('SVD-pair appendix (N_s=%d, Lch=%d)', results.N_s, primary_lch));
+    files{end+1} = appendix_file;
+end
 
 if isfield(cfg_run, 'mode') && strcmp(cfg_run.mode, 'time_diversity_smoke')
     fprintf('  time-diversity plots are smoke artifacts; noise-limited points are omitted.\n');
@@ -52,8 +58,9 @@ for iDoppler = 1:2
                 'LineWidth', 1.6, 'MarkerSize', 5);
             semilogy(run.SNR_dB, ofwdm, '--s', 'Color', colors.(spatial), ...
                 'LineWidth', 1.6, 'MarkerSize', 5);
-            labels{end+1} = sprintf('AFDM | %s', upper(spatial)); %#ok<AGROW>
-            labels{end+1} = sprintf('OFDM | %s', upper(spatial)); %#ok<AGROW>
+            pair_labels = time_diversity_pair_labels(spatial);
+            labels{end+1} = pair_labels{1}; %#ok<AGROW>
+            labels{end+1} = pair_labels{2}; %#ok<AGROW>
         end
         positive = plotted(isfinite(plotted) & plotted > 0);
         if isempty(positive)

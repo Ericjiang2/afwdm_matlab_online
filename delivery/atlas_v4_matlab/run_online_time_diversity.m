@@ -82,10 +82,15 @@ end
 stages = stages(1:stage_count);
 
 siso_anchor = run_time_diversity_siso_anchor(cfg0);
+[final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
+outcome = build_time_diversity_outcome(plan, final_stage, current_cfg);
 package = struct();
 package.baseline = baseline;
 package.escalation_stages = stages;
 package.final_plan = plan;
+package.final_results = final_results;
+package.final_stage = final_stage;
+package.outcome = outcome;
 package.siso_anchor = siso_anchor;
 package.metadata = struct( ...
     'run_id', run_id, ...
@@ -95,7 +100,8 @@ package.metadata = struct( ...
     'siso_internal_only', true, ...
     'timestamp', char(datetime('now', 'Format', "yyyyMMdd'T'HHmmss")));
 
-plot_time_diversity_results(baseline, cfg0, final_dir);
+plot_time_diversity_results(baseline, cfg0, final_dir, 'time_diversity_baseline');
+plot_time_diversity_results(final_results, current_cfg, final_dir);
 for ii = 1:numel(stages)
     stage_table = stages{ii}.results.summary_table;
     writetable(stage_table, fullfile(final_dir, ...

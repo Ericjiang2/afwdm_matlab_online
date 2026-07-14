@@ -43,8 +43,10 @@ run_online_time_diversity();
 正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK、`12:2:28 dB`，同时跑
 integer/fractional Doppler 与 block-LMMSE/GaBP。基线包含 WDM 主隔离、DFT
 robustness 和 SVD 附录；条件升级只跑证据触发的 Doppler 子场景和 WDM 主对。
-最终 MAT、主图、SVD 附录与四行定量表写入
-`outputs/online_runs/<run_id>/final/`。SISO anchor 仅保存在 MAT 内部诊断字段，
+最终 MAT、主图、适用阶段的 SVD 附录与四行定量表写入
+`outputs/online_runs/<run_id>/final/`。固定名称产物对应最后一个证据阶段；
+`time_diversity_baseline_*` 明确保留 Lch=6 基线。最终 MAT 同时保存
+`final_stage`、`final_results` 和机器可读 `outcome`。SISO anchor 仅保存在 MAT 内部诊断字段，
 不会进入交付图。低误码点未达到错误数门槛时标为 `noise_limited`，不会据此
 触发升级或绘制伪测量点。
 

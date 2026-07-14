@@ -23,6 +23,30 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-10] Make the Last Evidence Stage Canonical
+
+**Changed**:
+- The final package now exposes `final_stage`, `final_results`, and a
+  machine-readable outcome with terminal status and stage parameters.
+- Fixed-name final plots/table are built from the last evidence-producing
+  stage. Baseline artifacts are retained under an explicit `_baseline_`
+  prefix, so conditional results cannot be confused with Lch=6 evidence.
+- Plot labels now use the Spec names AFWDM/OFWDM, AFDM-DFT/OFDM-DFT, and
+  AFDM-SVD/OFDM-SVD. Fixed-BER interpolation rejects and diagnoses
+  non-monotonic eligible curves.
+
+**Why**:
+- A fail-closed or escalated result must point to the actual stopping stage,
+  while the baseline remains auditable. Sorting a non-monotonic BER curve by
+  BER before interpolation could otherwise hide a production anomaly.
+
+**Result**:
+- TDD covers last-stage selection, non-monotonic rejection, locked labels,
+  and the no-escalation end-to-end smoke. All seven delivery tests pass and
+  the smoke writes both baseline and canonical final artifacts.
+
+---
+
 ### [online-20260715-09] Fail Closed on Resume Identity Mismatch
 
 **Changed**:

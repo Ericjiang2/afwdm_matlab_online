@@ -4,7 +4,7 @@ function summary = build_time_diversity_summary(runs, primary_lch, target_ber)
 primary = runs([runs.Lch] == primary_lch & strcmp({runs.spatial_pair}, 'wdm'));
 doppler_modes = {'integer', 'fractional'};
 detectors = {'block_lmmse', 'gabp'};
-rows = cell(4, 11);
+rows = cell(4, 12);
 row = 0;
 
 for iDoppler = 1:2
@@ -14,19 +14,27 @@ for iDoppler = 1:2
             strcmp({primary.detector}, detectors{iDetector}), 1);
         if isempty(match)
             rows(row, :) = {doppler_modes{iDoppler}, detectors{iDetector}, ...
-                primary_lch, target_ber, NaN, NaN, NaN, NaN, NaN, true, 'missing'};
+                primary_lch, target_ber, NaN, NaN, NaN, NaN, NaN, true, false, 'missing'};
             continue;
         end
         run = primary(match);
         eligible = [run.points.claim_eligible];
         ber_a = [run.points.ber_a];
         ber_b = [run.points.ber_b];
-        snr_a = snr_at_target(run.SNR_dB(eligible), ber_a(eligible), target_ber);
-        snr_b = snr_at_target(run.SNR_dB(eligible), ber_b(eligible), target_ber);
+        [snr_a, monotonic_a] = snr_at_target( ...
+            run.SNR_dB(eligible), ber_a(eligible), target_ber);
+        [snr_b, monotonic_b] = snr_at_target( ...
+            run.SNR_dB(eligible), ber_b(eligible), target_ber);
+        monotonic = monotonic_a && monotonic_b;
         gain = snr_b - snr_a;
         representative = representative_point(run.points, target_ber);
-        noise_limited = ~isfinite(gain) || isempty(representative);
-        if noise_limited
+        noise_limited = ~isfinite(gain) || isempty(representative) || ~monotonic;
+        if ~monotonic
+            ratio = NaN;
+            ci = [NaN, NaN];
+            p = NaN;
+            status = 'nonmonotonic';
+        elseif noise_limited
             ratio = NaN;
             ci = [NaN, NaN];
             p = NaN;
@@ -38,20 +46,28 @@ for iDoppler = 1:2
             status = 'eligible';
         end
         rows(row, :) = {doppler_modes{iDoppler}, detectors{iDetector}, ...
-            primary_lch, target_ber, gain, ratio, ci(1), ci(2), p, noise_limited, status};
+            primary_lch, target_ber, gain, ratio, ci(1), ci(2), p, ...
+            noise_limited, monotonic, status};
     end
 end
 
 summary = cell2table(rows, 'VariableNames', { ...
     'doppler_mode', 'detector', 'Lch', 'target_ber', 'snr_gain_db', ...
     'ber_ratio_ofwdm_over_afwdm', 'ratio_ci_low', 'ratio_ci_high', ...
-    'mcnemar_p', 'noise_limited', 'status'});
+    'mcnemar_p', 'noise_limited', 'monotonic', 'status'});
 end
 
-function snr = snr_at_target(snr_values, ber_values, target)
+function [snr, monotonic] = snr_at_target(snr_values, ber_values, target)
 valid = isfinite(snr_values) & isfinite(ber_values) & ber_values > 0;
 snr_values = snr_values(valid);
-log_ber = log10(ber_values(valid));
+ber_values = ber_values(valid);
+[snr_values, snr_order] = sort(snr_values);
+log_ber = log10(ber_values(snr_order));
+monotonic = numel(log_ber) >= 2 && all(diff(log_ber) <= 1e-10);
+if ~monotonic
+    snr = NaN;
+    return;
+end
 if numel(snr_values) < 2 || log10(target) < min(log_ber) || log10(target) > max(log_ber)
     snr = NaN;
     return;

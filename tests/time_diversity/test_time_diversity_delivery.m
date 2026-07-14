@@ -69,9 +69,14 @@ final_mat = fullfile(out_root, 'unit_test_run', 'final', ...
 verifyTrue(testCase, isfile(checkpoint));
 verifyTrue(testCase, isfile(final_mat));
 verifyEqual(testCase, package.final_plan.next_stage, 'await_evidence');
+verifyEqual(testCase, package.final_stage, 'lch6');
+verifyEqual(testCase, package.outcome.status, 'inconclusive');
+verifyEqual(testCase, package.final_results.runs, package.baseline.runs);
 verifyTrue(testCase, package.siso_anchor.internal_diagnostic_only);
 verifyTrue(testCase, isfile(fullfile(out_root, 'unit_test_run', 'final', ...
     'time_diversity_mimo_main.png')));
+verifyTrue(testCase, isfile(fullfile(out_root, 'unit_test_run', 'final', ...
+    'time_diversity_baseline_mimo_main.png')));
 
 before = dir(checkpoint);
 pause(0.05);
@@ -84,6 +89,44 @@ verifyEqual(testCase, resumed.metadata.run_id, 'unit_test_run');
 verifyError(testCase, @() run_online_time_diversity( ...
     "time_diversity_online", "unit_test_run", out_root), ...
     'run_online_time_diversity:manifestMismatch');
+end
+
+function testLastEscalationStageBecomesCanonicalFinal(testCase)
+baseline = struct('token', 'baseline');
+stages = {struct('name', 'lch8', 'results', struct('token', 'lch8')), ...
+    struct('name', 'kmax3', 'results', struct('token', 'kmax3'))};
+
+[final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
+
+verifyEqual(testCase, final_results.token, 'kmax3');
+verifyEqual(testCase, final_stage, 'kmax3');
+end
+
+function testNonmonotonicBerIsDiagnosedInsteadOfInterpolated(testCase)
+runs = synthetic_runs();
+run = runs(1);
+p1 = run.points(1);
+p2 = run.points(1);
+p3 = run.points(2);
+p1.ber_a = 1e-2; p1.ber_b = 2e-2;
+p2.ber_a = 2e-2; p2.ber_b = 3e-2;
+p3.ber_a = 1e-4; p3.ber_b = 2e-4;
+run.SNR_dB = [10, 15, 20];
+run.points = [p1, p2, p3];
+
+summary = build_time_diversity_summary(run, 6, 1e-3);
+row = strcmp(summary.doppler_mode, 'integer') & ...
+    strcmp(summary.detector, 'block_lmmse');
+
+verifyFalse(testCase, summary.monotonic(row));
+verifyTrue(testCase, isnan(summary.snr_gain_db(row)));
+verifyEqual(testCase, summary.status(row), {'nonmonotonic'});
+end
+
+function testSpatialPairLabelsMatchSpecNames(testCase)
+verifyEqual(testCase, time_diversity_pair_labels('wdm'), {'AFWDM', 'OFWDM'});
+verifyEqual(testCase, time_diversity_pair_labels('dft'), {'AFDM-DFT', 'OFDM-DFT'});
+verifyEqual(testCase, time_diversity_pair_labels('svd'), {'AFDM-SVD', 'OFDM-SVD'});
 end
 
 function runs = synthetic_runs(spatial_pair)
