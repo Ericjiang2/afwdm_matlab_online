@@ -23,6 +23,27 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-01] Add Strictly Paired BER Statistics Harness
+
+**Changed**:
+- Added a paired-frame simulator that accepts one shared bit vector and one
+  shared unit-noise vector for two equal-dimension MIMO-DD block channels.
+- Added adaptive stopping on the better arm's error count, paired frame
+  bootstrap confidence intervals for `BER_B/BER_A`, exact McNemar testing,
+  and explicit `noise_limited` / `claim_eligible` fields.
+
+**Why**:
+- The previous six-scheme runner generated bits and noise independently inside
+  each arm, so it could not support paired significance tests or distinguish a
+  true high-SNR waveform gap from finite-bit starvation.
+
+**Result**:
+- MATLAB R2025a test-first cycle: the three harness contracts first failed on
+  missing functions, then passed after implementation. This is a local unit
+  test only; no MATLAB Online production Monte Carlo result is claimed.
+
+---
+
 ### [online-20260714-01] Adaptive BER Decade Axes and Imported Follow-up Results
 
 **Changed**:
