@@ -23,6 +23,29 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-03] Add Damped Gaussian MP for MIMO-DD Blocks
+
+**Changed**:
+- Added `detect_gmp.m`, a vectorized rectangular Gaussian BP detector using
+  observation/variable extrinsic messages, a finite QPSK denoiser, locked
+  damping `0.3..0.5`, 10--20 iterations, convergence reporting, and an
+  explicit shared edge-threshold setting.
+- The detector consumes the same equivalent block `H` used by block-LMMSE and
+  exposes iteration count, non-convergence, residual, and edge density.
+
+**Why**:
+- Block-LMMSE can absorb DD path separation into a global spatial-time solve.
+  The Spec therefore requires GaBP as a co-primary detector, with identical
+  hyperparameters for AFWDM and OFWDM.
+
+**Result**:
+- MATLAB R2025a TDD: three detector tests failed before implementation and then
+  passed. A fixed-seed SISO reduction matched the referenced `MP_MUD_SISO`
+  error count (`0` vs `0`) and converged in 14 iterations. This is algorithmic
+  smoke evidence, not a production BER claim.
+
+---
+
 ### [online-20260715-02] Add Full-Stream AFWDM/OFWDM Time-Diversity Baseline
 
 **Changed**:
