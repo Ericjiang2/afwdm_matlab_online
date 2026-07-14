@@ -121,6 +121,11 @@ if isfield(results, 'low_mimo') && ~isempty(results.low_mimo)
     plot_files{end+1} = out_png; %#ok<AGROW>
 end
 
+if isfield(results, 'time_diversity') && ~isempty(results.time_diversity)
+    extra_files = plot_time_diversity_results(results.time_diversity, cfg_run, fig_dir);
+    plot_files = [plot_files, extra_files]; %#ok<AGROW>
+end
+
 end
 
 function y = ber_for_plot(y, bits)

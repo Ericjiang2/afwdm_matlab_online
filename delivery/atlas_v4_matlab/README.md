@@ -29,6 +29,23 @@ run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
 ```
 
+AFWDM vs OFWDM 时间分集正式入口:
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+run_online_time_diversity();
+```
+
+它使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
+中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
+正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK、`12:2:28 dB`，同时跑
+integer/fractional Doppler 与 block-LMMSE/GaBP。基线包含 WDM 主隔离、DFT
+robustness 和 SVD 附录；条件升级只跑证据触发的 Doppler 子场景和 WDM 主对。
+最终 MAT、主图、SVD 附录与四行定量表写入
+`outputs/online_runs/<run_id>/final/`。SISO anchor 仅保存在 MAT 内部诊断字段，
+不会进入交付图。低误码点未达到错误数门槛时标为 `noise_limited`，不会据此
+触发升级或绘制伪测量点。
+
 其默认设置为 strict-isotropic、4x4、`N_s=m_s=11`（main.pdf Eq.(4)-(5)
 中心格椭圆，不是 atlas overlap/nomask 的 16 个候选 bin）、高多普勒
 `860 km/h`、`tau_max=32 us`、分数 Doppler、20 帧和 `-10:5:20 dB`。该入口

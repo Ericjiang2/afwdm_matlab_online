@@ -23,6 +23,30 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-07] Add Resumable Time-Diversity Delivery Entry
+
+**Changed**:
+- Added `run_online_time_diversity.m`, which checkpoints each stage/SNR,
+  reconstructs the multi-SNR paired result, and resumes from a stable run id.
+- Added WDM/DFT/SVD paired spatial routes, a four-row fixed-BER gain table,
+  separate MIMO main/SVD appendix figures, and an internal-only SISO anchor.
+- Wired the evidence-gated `Lch=8 -> kmax=3 -> per-stream LMMSE` sequence into
+  the production runner. Conditional runs are Doppler-specific and WDM-only.
+
+**Why**:
+- MATLAB Online sessions can disconnect during the 9-point, adaptive-frame
+  sweep. Scientific escalation must use combined claim-eligible evidence,
+  never a one-point smoke or a noise-limited zero-error observation.
+
+**Result**:
+- MATLAB R2025a: the delivery contract first failed on the missing public
+  entry, then its full smoke executed and resumed successfully. The smoke
+  produced one baseline checkpoint, final MAT, MIMO/SVD figures, table, and
+  an `await_evidence` outcome; it is workflow evidence, not a production BER
+  claim. The complete local suite passes 19 tests before commit.
+
+---
+
 ### [online-20260715-06] Add Evidence-Gated Fail-Closed Escalation
 
 **Changed**:

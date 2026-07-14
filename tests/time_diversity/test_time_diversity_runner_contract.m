@@ -26,6 +26,8 @@ verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 15);
 verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, 12);
 verifyEqual(testCase, cfg.time_diversity.max_frames, 1);
 verifyEqual(testCase, cfg.time_diversity.Lch_values, [4, 6]);
+verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm', 'dft', 'svd'});
+verifyEqual(testCase, cfg.time_diversity.summary_target_ber, 1e-3);
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
@@ -70,9 +72,9 @@ point4 = struct('ber_ratio_b_over_a', 2, 'claim_eligible', true);
 point6 = struct('ber_ratio_b_over_a', 3, 'claim_eligible', true);
 runs = [ ...
     struct('doppler_mode', 'fractional', 'detector', 'gabp', 'Lch', 4, ...
-        'SNR_dB', 20, 'points', point4), ...
+        'spatial_pair', 'wdm', 'SNR_dB', 20, 'points', point4), ...
     struct('doppler_mode', 'fractional', 'detector', 'gabp', 'Lch', 6, ...
-        'SNR_dB', 20, 'points', point6)];
+        'spatial_pair', 'wdm', 'SNR_dB', 20, 'points', point6)];
 
 summary = compare_time_diversity_lch(runs, 4, 6);
 

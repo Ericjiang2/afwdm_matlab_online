@@ -1,0 +1,214 @@
+function package = run_online_time_diversity(profile, run_id, output_root)
+%RUN_ONLINE_TIME_DIVERSITY Resumable AFWDM-vs-OFWDM MATLAB Online runner.
+%
+% Production use from the repository root:
+%   addpath('delivery/atlas_v4_matlab');
+%   run_online_time_diversity();
+%
+% Each stage is checkpointed per SNR. Reusing the same run id skips valid
+% checkpoints and a completed final package. Conditional stages follow the
+% fail-closed order encoded by resolve_time_diversity_escalation.
+
+if nargin < 1 || isempty(profile)
+    profile = "time_diversity_online";
+end
+profile = lower(string(profile));
+if ~ismember(profile, ["time_diversity_online", "time_diversity_smoke"])
+    error('run_online_time_diversity:profile', ...
+        'Profile must be time_diversity_online or time_diversity_smoke.');
+end
+
+cfg0 = make_delivery_config(profile);
+for ii = 1:numel(cfg0.path_dirs)
+    if exist(cfg0.path_dirs{ii}, 'dir')
+        addpath(cfg0.path_dirs{ii});
+    end
+end
+addpath(cfg0.delivery_dir);
+
+if nargin < 3 || isempty(output_root)
+    output_root = fullfile(cfg0.output_dir, 'online_runs');
+end
+ensure_dir(output_root);
+if nargin < 2 || isempty(run_id)
+    run_id = active_run_id(output_root);
+else
+    run_id = char(string(run_id));
+end
+
+run_root = fullfile(output_root, run_id);
+checkpoint_dir = fullfile(run_root, 'checkpoints');
+final_dir = fullfile(run_root, 'final');
+ensure_dir(checkpoint_dir);
+ensure_dir(final_dir);
+final_mat = fullfile(final_dir, 'time_diversity_final.mat');
+if isfile(final_mat)
+    loaded = load(final_mat, 'package');
+    package = loaded.package;
+    return;
+end
+
+fprintf('Time-diversity run %s (%s)\n', run_id, profile);
+baseline = run_stage(cfg0, 'baseline', checkpoint_dir);
+current_cfg = cfg0;
+current_results = baseline;
+current_stage = 'lch6';
+stages = cell(1, 3);
+stage_count = 0;
+
+while true
+    gains = gain_records(current_results.summary_table, ...
+        current_cfg.time_diversity.doppler_modes);
+    plan = resolve_time_diversity_escalation(current_stage, gains, cfg0);
+    if ismember(plan.next_stage, {'complete', 'await_evidence', 'fail_closed'})
+        break;
+    end
+
+    next_cfg = apply_time_diversity_escalation(current_cfg, plan);
+    next_results = run_stage(next_cfg, plan.next_stage, checkpoint_dir);
+    stage_count = stage_count + 1;
+    stages{stage_count} = struct('name', plan.next_stage, ...
+        'trigger_plan', plan, 'results', next_results);
+    current_cfg = next_cfg;
+    current_results = next_results;
+    current_stage = plan.next_stage;
+end
+stages = stages(1:stage_count);
+
+siso_anchor = run_time_diversity_siso_anchor(cfg0);
+package = struct();
+package.baseline = baseline;
+package.escalation_stages = stages;
+package.final_plan = plan;
+package.siso_anchor = siso_anchor;
+package.metadata = struct( ...
+    'run_id', run_id, ...
+    'profile', char(profile), ...
+    'generated_by', 'delivery/atlas_v4_matlab/run_online_time_diversity.m', ...
+    'checkpoint_granularity', 'stage_per_snr', ...
+    'siso_internal_only', true, ...
+    'timestamp', char(datetime('now', 'Format', "yyyyMMdd'T'HHmmss")));
+
+plot_time_diversity_results(baseline, cfg0, final_dir);
+for ii = 1:numel(stages)
+    stage_table = stages{ii}.results.summary_table;
+    writetable(stage_table, fullfile(final_dir, ...
+        sprintf('time_diversity_summary_%s.csv', stages{ii}.name)));
+end
+save(final_mat, 'package', 'cfg0', '-v7');
+fprintf('Time-diversity final package: %s\n', final_mat);
+end
+
+function results = run_stage(cfg_stage, stage_name, checkpoint_dir)
+snrs = cfg_stage.time_diversity.SNR_dB_list;
+snrs = sort(snrs);
+packs = cell(1, numel(snrs));
+for ii = 1:numel(snrs)
+    snr_db = snrs(ii);
+    checkpoint_file = fullfile(checkpoint_dir, sprintf('%s_snr_%s.mat', ...
+        stage_name, snr_tag(snr_db)));
+    if isfile(checkpoint_file)
+        loaded = load(checkpoint_file, 'checkpoint');
+        checkpoint = loaded.checkpoint;
+        if checkpoint.snr_db ~= snr_db || ~strcmp(checkpoint.stage, stage_name)
+            error('run_online_time_diversity:checkpointMismatch', ...
+                'Checkpoint metadata mismatch: %s.', checkpoint_file);
+        end
+        fprintf('  SKIP %s SNR=%g dB\n', stage_name, snr_db);
+    else
+        fprintf('  RUN  %s SNR=%g dB\n', stage_name, snr_db);
+        cfg_one = cfg_stage;
+        cfg_one.time_diversity.SNR_dB_list = snr_db;
+        checkpoint = struct('stage', stage_name, 'snr_db', snr_db, ...
+            'results', run_time_diversity_ber(cfg_one));
+        save(checkpoint_file, 'checkpoint', '-v7');
+    end
+    packs{ii} = checkpoint.results;
+end
+results = combine_stage_results(packs, snrs, cfg_stage);
+end
+
+function results = combine_stage_results(packs, snrs, cfg_stage)
+results = packs{1};
+for iRun = 1:numel(results.runs)
+    points = repmat(results.runs(iRun).points(1), 1, numel(snrs));
+    for iSNR = 1:numel(snrs)
+        candidate = packs{iSNR}.runs(iRun);
+        if candidate.SNR_dB ~= snrs(iSNR) || ...
+                ~same_run_identity(results.runs(iRun), candidate)
+            error('run_online_time_diversity:combineMismatch', ...
+                'Per-SNR checkpoint run identities do not match.');
+        end
+        points(iSNR) = candidate.points;
+    end
+    results.runs(iRun).SNR_dB = snrs;
+    results.runs(iRun).points = points;
+end
+primary_lch = max(cfg_stage.time_diversity.Lch_values);
+results.summary_table = build_time_diversity_summary( ...
+    results.runs, primary_lch, cfg_stage.time_diversity.summary_target_ber);
+if all(ismember([4, 6], cfg_stage.time_diversity.Lch_values))
+    results.lch_comparison = compare_time_diversity_lch(results.runs, 4, 6);
+else
+    results.lch_comparison = [];
+end
+end
+
+function same = same_run_identity(a, b)
+same = strcmp(a.doppler_mode, b.doppler_mode) && ...
+    strcmp(a.detector, b.detector) && strcmp(a.spatial_pair, b.spatial_pair) && ...
+    a.Lch == b.Lch && a.kmax == b.kmax;
+end
+
+function gains = gain_records(summary, doppler_modes)
+empty = struct('doppler_mode', '', 'gain_db', NaN, 'claim_eligible', false);
+gains = repmat(empty, 1, numel(doppler_modes));
+for ii = 1:numel(doppler_modes)
+    mode = doppler_modes{ii};
+    selected = strcmp(summary.doppler_mode, mode) & ...
+        ismember(summary.detector, {'block_lmmse', 'gabp'});
+    values = summary.snr_gain_db(selected);
+    eligible = numel(values) == 2 && all(isfinite(values)) && ...
+        all(~summary.noise_limited(selected));
+    gains(ii).doppler_mode = mode;
+    gains(ii).claim_eligible = eligible;
+    if eligible
+        % Both co-primary detectors must remain below 1 dB to escalate.
+        gains(ii).gain_db = max(values);
+    end
+end
+end
+
+function tag = snr_tag(value)
+if value < 0
+    prefix = 'm';
+else
+    prefix = 'p';
+end
+tag = [prefix strrep(sprintf('%g', abs(value)), '.', 'p')];
+end
+
+function run_id = active_run_id(output_root)
+active_file = fullfile(output_root, '_ACTIVE_TIME_DIVERSITY_RUN_ID.txt');
+if isfile(active_file)
+    run_id = strtrim(fileread(active_file));
+    if ~isempty(run_id)
+        return;
+    end
+end
+run_id = ['time_diversity_' char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'))];
+fid = fopen(active_file, 'w');
+if fid < 0
+    error('run_online_time_diversity:activeRunId', ...
+        'Cannot write active run id: %s.', active_file);
+end
+cleanup = onCleanup(@() fclose(fid));
+fprintf(fid, '%s\n', run_id);
+clear cleanup;
+end
+
+function ensure_dir(path_value)
+if ~exist(path_value, 'dir')
+    mkdir(path_value);
+end
+end

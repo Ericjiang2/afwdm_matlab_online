@@ -76,6 +76,7 @@ verifyEqual(testCase, next.tau_max_us, cfg.tau_max_us);
 verifyEqual(testCase, next.array_shape, cfg.array_shape);
 verifyEqual(testCase, next.time_diversity.N_s, cfg.time_diversity.N_s);
 verifyEqual(testCase, next.time_diversity.detectors, {'block_lmmse', 'gabp'});
+verifyEqual(testCase, next.time_diversity.spatial_pairs, {'wdm'});
 end
 
 function cfg = minimal_cfg()

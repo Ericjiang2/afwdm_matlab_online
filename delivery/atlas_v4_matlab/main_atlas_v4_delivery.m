@@ -210,6 +210,7 @@ time_diversity_results = [];
 if cfg_run.run_time_diversity
     fprintf('\n[time-diversity] running strictly paired AFWDM/OFWDM experiment...\n');
     time_diversity_results = run_time_diversity_ber(cfg_run);
+    time_diversity_results.siso_anchor = run_time_diversity_siso_anchor(cfg_run);
 end
 
 %% 4. 保存 .mat 和 .png

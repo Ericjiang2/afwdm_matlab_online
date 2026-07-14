@@ -15,6 +15,7 @@ next.v_max_kmh = plan.v_max_kmh;
 next.time_diversity.Lch_values = plan.Lch_values;
 next.time_diversity.doppler_modes = plan.triggered_doppler_modes;
 next.time_diversity.detectors = plan.detectors;
+next.time_diversity.spatial_pairs = {'wdm'};
 next.time_diversity.escalation_stage = plan.next_stage;
 next.time_diversity.escalation_audit = plan;
 
