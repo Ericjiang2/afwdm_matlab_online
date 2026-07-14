@@ -23,6 +23,26 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-11] Preserve Independent Doppler Outcomes
+
+**Changed**:
+- Added a persistent integer/fractional state ledger with independent
+  `complete`, `inconclusive`, `escalating`, and `fail_closed` outcomes.
+- Global completion now requires every Doppler mode in the current decision
+  scope to be eligible, and the package records per-Doppler plus aggregate
+  outcome (`partial` for mixed complete/fail-closed boundaries).
+
+**Why**:
+- One significant Doppler result must not hide a noise-limited peer, and an
+  escalated subset must not erase the terminal state of an untriggered mode.
+
+**Result**:
+- TDD reproduced the mixed eligible/ineligible false completion. Ten
+  escalation tests now pass, including mixed inconclusive and explicit
+  complete/fail-closed partial-outcome contracts.
+
+---
+
 ### [online-20260715-10] Make the Last Evidence Stage Canonical
 
 **Changed**:

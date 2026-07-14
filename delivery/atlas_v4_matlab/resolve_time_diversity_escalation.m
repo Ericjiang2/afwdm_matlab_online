@@ -12,7 +12,7 @@ plan = base_plan(cfg_run);
 plan.current_stage = char(current_stage);
 plan.triggered_doppler_modes = triggered_modes;
 if isempty(triggered_modes)
-    if any(eligible)
+    if ~isempty(eligible) && all(eligible)
         plan.next_stage = 'complete';
     else
         plan.next_stage = 'await_evidence';

@@ -79,6 +79,44 @@ verifyTrue(testCase, gains.claim_eligible);
 verifyEqual(testCase, plan.next_stage, 'lch8');
 end
 
+function testEligibleDopplerCannotMaskInconclusivePeer(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+gains = [ ...
+    struct('doppler_mode', 'integer', 'gain_db', 1.2, 'claim_eligible', true), ...
+    struct('doppler_mode', 'fractional', 'gain_db', NaN, 'claim_eligible', false)];
+
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+verifyEqual(testCase, plan.next_stage, 'await_evidence');
+end
+
+function testPerDopplerStatesKeepMixedOutcomeInconclusive(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+states = initialize_time_diversity_mode_states({'integer', 'fractional'});
+gains = [ ...
+    struct('doppler_mode', 'integer', 'gain_db', 1.2, 'claim_eligible', true), ...
+    struct('doppler_mode', 'fractional', 'gain_db', NaN, 'claim_eligible', false)];
+states = update_time_diversity_mode_states(states, gains, 'lch6', 'await_evidence');
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+outcome = build_time_diversity_outcome(plan, 'lch6', cfg, states);
+
+verifyEqual(testCase, {states.status}, {'complete', 'inconclusive'});
+verifyEqual(testCase, outcome.status, 'inconclusive');
+end
+
+function testCompleteAndFailClosedModesProduceExplicitPartial(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+states = initialize_time_diversity_mode_states({'integer', 'fractional'});
+states(1).status = 'complete';
+states(2).status = 'fail_closed';
+plan = struct('next_stage', 'fail_closed', 'kmax', 3);
+
+outcome = build_time_diversity_outcome(plan, 'per_stream_lmmse', cfg, states);
+
+verifyEqual(testCase, outcome.status, 'partial');
+end
+
 function testPerStreamLmmseRemainsSupplementalAndDeterministic(testCase)
 cfg = minimal_cfg();
 H = eye(cfg.Nblk * cfg.Nstreams);

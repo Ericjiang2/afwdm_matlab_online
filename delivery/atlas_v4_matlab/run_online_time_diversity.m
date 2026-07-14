@@ -59,6 +59,8 @@ baseline = run_stage(cfg0, 'baseline', checkpoint_dir);
 current_cfg = cfg0;
 current_results = baseline;
 current_stage = 'lch6';
+mode_states = initialize_time_diversity_mode_states( ...
+    cfg0.time_diversity.doppler_modes);
 stages = cell(1, 3);
 stage_count = 0;
 
@@ -66,6 +68,8 @@ while true
     gains = build_time_diversity_gain_records(current_results.summary_table, ...
         current_cfg.time_diversity.doppler_modes);
     plan = resolve_time_diversity_escalation(current_stage, gains, cfg0);
+    mode_states = update_time_diversity_mode_states( ...
+        mode_states, gains, current_stage, plan.next_stage);
     if ismember(plan.next_stage, {'complete', 'await_evidence', 'fail_closed'})
         break;
     end
@@ -83,7 +87,9 @@ stages = stages(1:stage_count);
 
 siso_anchor = run_time_diversity_siso_anchor(cfg0);
 [final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
-outcome = build_time_diversity_outcome(plan, final_stage, current_cfg);
+outcome = build_time_diversity_outcome(plan, final_stage, current_cfg, mode_states);
+plan.overall_status = outcome.status;
+plan.per_doppler = mode_states;
 package = struct();
 package.baseline = baseline;
 package.escalation_stages = stages;
