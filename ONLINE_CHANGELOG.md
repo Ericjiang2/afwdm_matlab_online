@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-05] Add Controlled Lch=4-to-6 DD-Crowding Sweep
+
+**Changed**:
+- The paired runner now executes `Lch=[4,6]` while preserving every other
+  physical, spatial, waveform, detector, seed, and stopping parameter.
+- Added a contract helper that rejects per-path-Sigma scenarios, proves only
+  `cfg.Lch` changed, and rechecks the AFDM diversity inequality.
+- Added a net-gap summary comparing `BER_OFWDM/BER_AFWDM` at Lch 4 and 6 for
+  each Doppler/detector/SNR combination; noise-limited points remain ineligible.
+
+**Why**:
+- Moderate DD crowding is the approved mechanism probe, but increasing paths
+  can also add shared spatial diversity. A single-variable audit prevents that
+  effect from being mislabeled as a temporal waveform gain.
+
+**Result**:
+- MATLAB R2025a: 11/11 tests passed. A one-frame full-`N_s=11` smoke completed
+  all eight Lch x Doppler x detector runs and produced four Lch comparisons;
+  all were correctly marked noise-limited, so no scientific trend is claimed.
+
+---
+
 ### [online-20260715-04] Run GaBP Beside LMMSE on the Same Paired Frames
 
 **Changed**:

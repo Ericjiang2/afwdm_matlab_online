@@ -1,0 +1,49 @@
+function summary = compare_time_diversity_lch(runs, baseline_lch, crowded_lch)
+%COMPARE_TIME_DIVERSITY_LCH Quantify the Lch-only change in temporal BER gap.
+
+baseline = runs([runs.Lch] == baseline_lch);
+crowded = runs([runs.Lch] == crowded_lch);
+empty = struct('doppler_mode', '', 'detector', '', 'SNR_dB', NaN, ...
+    'ratio_lch4', NaN, 'ratio_lch6', NaN, 'net_ratio_change', NaN, ...
+    'claim_eligible', false, 'interpretation', 'noise_limited');
+summary = repmat(empty, 1, sum(arrayfun(@(x) numel(x.SNR_dB), baseline)));
+index = 0;
+
+for ii = 1:numel(baseline)
+    match = find(strcmp({crowded.doppler_mode}, baseline(ii).doppler_mode) & ...
+        strcmp({crowded.detector}, baseline(ii).detector), 1);
+    if isempty(match) || ~isequal(crowded(match).SNR_dB, baseline(ii).SNR_dB)
+        error('compare_time_diversity_lch:missingPair', ...
+            'Missing matching Lch=%d run for %s/%s.', crowded_lch, ...
+            baseline(ii).doppler_mode, baseline(ii).detector);
+    end
+
+    for iSNR = 1:numel(baseline(ii).SNR_dB)
+        index = index + 1;
+        ratio_before = baseline(ii).points(iSNR).ber_ratio_b_over_a;
+        ratio_after = crowded(match).points(iSNR).ber_ratio_b_over_a;
+        eligible = baseline(ii).points(iSNR).claim_eligible && ...
+            crowded(match).points(iSNR).claim_eligible;
+        net_change = ratio_after / ratio_before;
+        interpretation = 'noise_limited';
+        if eligible
+            if net_change > 1 + 1e-12
+                interpretation = 'larger_temporal_gap';
+            elseif net_change < 1 - 1e-12
+                interpretation = 'smaller_temporal_gap';
+            else
+                interpretation = 'unchanged_temporal_gap';
+            end
+        end
+        summary(index) = struct( ...
+            'doppler_mode', baseline(ii).doppler_mode, ...
+            'detector', baseline(ii).detector, ...
+            'SNR_dB', baseline(ii).SNR_dB(iSNR), ...
+            'ratio_lch4', ratio_before, ...
+            'ratio_lch6', ratio_after, ...
+            'net_ratio_change', net_change, ...
+            'claim_eligible', eligible, ...
+            'interpretation', interpretation);
+    end
+end
+end

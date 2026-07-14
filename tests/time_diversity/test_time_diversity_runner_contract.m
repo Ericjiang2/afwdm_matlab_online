@@ -25,6 +25,7 @@ verifyEqual(testCase, cfg.time_diversity.gabp.damping, 0.4);
 verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 15);
 verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, 12);
 verifyEqual(testCase, cfg.time_diversity.max_frames, 1);
+verifyEqual(testCase, cfg.time_diversity.Lch_values, [4, 6]);
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
@@ -46,6 +47,39 @@ verifyEqual(testCase, cfg_ofwdm.c1, 0, 'AbsTol', 0);
 verifyEqual(testCase, cfg_ofwdm.c2, 0, 'AbsTol', 0);
 verifyTrue(testCase, audit.same_spatial_basis);
 verifyTrue(testCase, audit.only_temporal_basis_differs);
+end
+
+function testLchSweepChangesOnlyPathCount(testCase)
+scenario = struct();
+scenario.cfg = minimal_base_cfg(make_delivery_config("time_diversity_smoke"));
+scenario.cfg.Lch = 4;
+scenario.cfg.afdm_diversity_lhs = 29;
+scenario.cfg.Nblk = 64;
+
+[updated, audit] = configure_time_diversity_lch(scenario, 6);
+
+verifyEqual(testCase, updated.cfg.Lch, 6);
+verifyTrue(testCase, audit.only_lch_changed);
+verifyEqual(testCase, audit.before_Lch, 4);
+verifyEqual(testCase, audit.after_Lch, 6);
+verifyTrue(testCase, audit.diversity_condition_passed);
+end
+
+function testLchSummaryReportsNetTemporalGapChange(testCase)
+point4 = struct('ber_ratio_b_over_a', 2, 'claim_eligible', true);
+point6 = struct('ber_ratio_b_over_a', 3, 'claim_eligible', true);
+runs = [ ...
+    struct('doppler_mode', 'fractional', 'detector', 'gabp', 'Lch', 4, ...
+        'SNR_dB', 20, 'points', point4), ...
+    struct('doppler_mode', 'fractional', 'detector', 'gabp', 'Lch', 6, ...
+        'SNR_dB', 20, 'points', point6)];
+
+summary = compare_time_diversity_lch(runs, 4, 6);
+
+verifyEqual(testCase, summary.ratio_lch4, 2);
+verifyEqual(testCase, summary.ratio_lch6, 3);
+verifyEqual(testCase, summary.net_ratio_change, 1.5, 'AbsTol', 1e-12);
+verifyTrue(testCase, summary.claim_eligible);
 end
 
 function cfg = minimal_base_cfg(cfg_run)
