@@ -23,6 +23,24 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-13] Fingerprint the Recursive MATLAB Dependency Closure
+
+**Changed**:
+- Run manifests now recursively hash every `.m` file under the existing
+  configured MATLAB path directories, with deduplicated stable paths.
+- Resume validation also compares the saved Git commit and MATLAB release.
+
+**Why**:
+- Direct-only scans omitted `variance/` and `variance_aniso/`; changing a
+  physical-model dependency could otherwise reuse an incompatible checkpoint.
+
+**Result**:
+- TDD modifies a nested dependency fixture and confirms its code fingerprint
+  changes and resume validation raises `manifestMismatch`; an unchanged tree
+  produces an identical fingerprint. Manifest files pass checkcode.
+
+---
+
 ### [online-20260715-12] Compose Final Results per Subscenario
 
 **Changed**:

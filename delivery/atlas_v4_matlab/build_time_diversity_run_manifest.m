@@ -19,7 +19,8 @@ manifest.runner_version = 'time-diversity-20260715.2';
 manifest.stage = char(stage_name);
 manifest.profile = cfg_run.mode;
 manifest.config_fingerprint = sha256_bytes(unicode2native(jsonencode(contract), 'UTF-8'));
-manifest.code_fingerprint = repository_code_fingerprint(cfg_run.repo_root, cfg_run.delivery_dir);
+manifest.code_fingerprint = repository_code_fingerprint( ...
+    cfg_run.repo_root, cfg_run.path_dirs, cfg_run.delivery_dir);
 manifest.git_commit = git_commit(cfg_run.repo_root);
 manifest.matlab_release = version('-release');
 manifest.seed_contract = cfg_run.seed;
@@ -30,18 +31,28 @@ manifest.Lch_values = cfg_run.time_diversity.Lch_values;
 manifest.SNR_dB_list = cfg_run.time_diversity.SNR_dB_list;
 end
 
-function value = repository_code_fingerprint(repo_root, delivery_dir)
-roots = {repo_root, fullfile(repo_root, 'tools'), delivery_dir};
-records = {};
+function value = repository_code_fingerprint(repo_root, path_dirs, delivery_dir)
+roots = unique([path_dirs, {delivery_dir}], 'stable');
+file_paths = {};
 for ii = 1:numel(roots)
-    files = dir(fullfile(roots{ii}, '*.m'));
-    [~, order] = sort({files.name});
-    files = files(order);
-    for jj = 1:numel(files)
-        path_value = fullfile(files(jj).folder, files(jj).name);
-        relative = erase(path_value, [repo_root filesep]);
-        records{end+1} = [relative newline fileread(path_value) newline]; %#ok<AGROW>
+    if ~exist(roots{ii}, 'dir')
+        continue;
     end
+    files = dir(fullfile(roots{ii}, '**', '*.m'));
+    candidates = fullfile({files.folder}, {files.name});
+    file_paths = [file_paths, candidates]; %#ok<AGROW>
+end
+file_paths = unique(file_paths);
+file_paths = sort(file_paths);
+records = {};
+for ii = 1:numel(file_paths)
+    path_value = file_paths{ii};
+    if startsWith(path_value, [repo_root filesep])
+        relative = erase(path_value, [repo_root filesep]);
+    else
+        relative = path_value;
+    end
+    records{end+1} = [relative newline fileread(path_value) newline]; %#ok<AGROW>
 end
 value = sha256_bytes(unicode2native(strjoin(records, ''), 'UTF-8'));
 end

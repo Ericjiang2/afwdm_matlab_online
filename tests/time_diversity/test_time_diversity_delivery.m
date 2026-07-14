@@ -71,7 +71,8 @@ verifyTrue(testCase, isfile(final_mat));
 verifyEqual(testCase, package.final_plan.next_stage, 'await_evidence');
 verifyEqual(testCase, package.final_stage, 'lch6');
 verifyEqual(testCase, package.outcome.status, 'inconclusive');
-verifyEqual(testCase, package.final_results.runs, package.baseline.runs);
+baseline_primary = package.baseline.runs([package.baseline.runs.Lch] == 6);
+verifyEqual(testCase, package.final_results.runs, baseline_primary);
 verifyTrue(testCase, package.siso_anchor.internal_diagnostic_only);
 verifyTrue(testCase, isfile(fullfile(out_root, 'unit_test_run', 'final', ...
     'time_diversity_mimo_main.png')));
@@ -151,10 +152,38 @@ verifyEqual(testCase, time_diversity_pair_labels('dft'), {'AFDM-DFT', 'OFDM-DFT'
 verifyEqual(testCase, time_diversity_pair_labels('svd'), {'AFDM-SVD', 'OFDM-SVD'});
 end
 
+function testManifestFingerprintCoversRecursivePathDependencies(testCase)
+root = tempname;
+delivery = fullfile(root, 'delivery');
+variance = fullfile(root, 'variance', 'nested');
+mkdir(delivery);
+mkdir(variance);
+cleanup = onCleanup(@() rmdir(root, 's')); %#ok<NASGU>
+write_text(fullfile(delivery, 'runner.m'), 'function runner; end');
+dependency = fullfile(variance, 'dependency.m');
+write_text(dependency, 'function y=dependency; y=1; end');
+
+cfg = make_delivery_config("time_diversity_smoke");
+cfg.repo_root = root;
+cfg.delivery_dir = delivery;
+cfg.path_dirs = {delivery, fullfile(root, 'variance')};
+before = build_time_diversity_run_manifest(cfg, 'baseline');
+same = build_time_diversity_run_manifest(cfg, 'baseline');
+write_text(dependency, 'function y=dependency; y=2; end');
+after = build_time_diversity_run_manifest(cfg, 'baseline');
+
+verifyEqual(testCase, same.code_fingerprint, before.code_fingerprint);
+verifyNotEqual(testCase, after.code_fingerprint, before.code_fingerprint);
+verifyError(testCase, @() validate_time_diversity_run_manifest( ...
+    before, after, 'recursive dependency fixture'), ...
+    'run_online_time_diversity:manifestMismatch');
+end
+
 function runs = synthetic_runs(spatial_pair)
 if nargin < 1
     spatial_pair = 'wdm';
 end
+
 doppler = {'integer', 'fractional'};
 detectors = {'block_lmmse', 'gabp'};
 point_template = struct('ber_a', NaN, 'ber_b', NaN, ...
@@ -180,4 +209,12 @@ for ii = 1:2
         runs(index).points = [p1, p2];
     end
 end
+end
+
+function write_text(path_value, content)
+fid = fopen(path_value, 'w');
+assert(fid >= 0, 'Cannot write fixture: %s', path_value);
+cleanup = onCleanup(@() fclose(fid));
+fprintf(fid, '%s\n', content);
+clear cleanup;
 end
