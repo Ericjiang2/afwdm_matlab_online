@@ -23,6 +23,28 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-06] Add Evidence-Gated Fail-Closed Escalation
+
+**Changed**:
+- Added the per-Doppler escalation sequence `Lch=6 -> Lch=8 -> kmax=3 at
+  1100 km/h -> supplemental per-stream LMMSE -> fail-closed`.
+- Noise-limited points cannot trigger escalation. The kmax=3 stage computes the
+  unique velocity mapping and verifies `2*3*(5+1)+5=41<64`.
+- Added a runnable config applicator and a per-stream LMMSE detector that is
+  appended beside, never substituted for, block-LMMSE and GaBP.
+
+**Why**:
+- Conditional stages must change one variable at a time and must not use an
+  unmeasured high-SNR point as evidence for a sub-1 dB gap.
+
+**Result**:
+- MATLAB R2025a: 15/15 tests passed. Real one-frame smokes completed the
+  kmax=3/Lch=8 stage (2 detectors) and the supplemental per-stream stage
+  (3 detectors). No conditional stage was claimed as scientifically triggered;
+  those smokes used synthetic gain records solely to exercise the code paths.
+
+---
+
 ### [online-20260715-05] Add Controlled Lch=4-to-6 DD-Crowding Sweep
 
 **Changed**:

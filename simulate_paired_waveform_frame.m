@@ -137,8 +137,29 @@ switch lower(name)
         end
     case 'gabp'
         [x_hat, info] = detect_gmp(H, y, noise_variance, qam_order, detector_options);
+    case 'per_stream_lmmse'
+        [x_hat, info] = detect_per_stream_lmmse(H, y, noise_variance, cfg);
     otherwise
         error('simulate_paired_waveform_frame:detector', ...
             'Unknown detector "%s".', name);
 end
+end
+
+function [x_hat, info] = detect_per_stream_lmmse(H, y, noise_variance, cfg)
+N = cfg.Nblk;
+Ns = min(cfg.Nstreams, min(cfg.ms, cfg.mr));
+if size(H, 1) ~= N * Ns || size(H, 2) ~= N * Ns
+    error('simulate_paired_waveform_frame:perStreamDimensions', ...
+        'Per-stream LMMSE requires a square Nblk*Nstreams block channel.');
+end
+
+x_hat = zeros(N * Ns, 1);
+for stream = 1:Ns
+    index = (stream - 1) * N + (1:N);
+    H_stream = H(index, index);
+    x_hat(index) = (H_stream' * H_stream + noise_variance * eye(N)) \ ...
+        (H_stream' * y(index));
+end
+info = struct('iterations', 1, 'converged', true, ...
+    'solver', 'per_stream_lmmse', 'stream_count', Ns);
 end
