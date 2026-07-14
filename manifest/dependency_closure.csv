@@ -50,6 +50,7 @@ simulate_paired_csi_ber.m,code
 smoke_channel_estimation_integer.m,code
 delivery/atlas_v4_matlab/README.md,code
 delivery/atlas_v4_matlab/build_delivery_channel_taps.m,code
+delivery/atlas_v4_matlab/delivery_ber_axis_scale.m,code
 delivery/atlas_v4_matlab/main_atlas_v4_delivery.m,code
 delivery/atlas_v4_matlab/make_delivery_config.m,code
 delivery/atlas_v4_matlab/make_delivery_scheme_cfg.m,code

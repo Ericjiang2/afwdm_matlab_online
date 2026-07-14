@@ -16,6 +16,7 @@ for iScenario = 1:numel(results.scenario_labels)
         colors = lines(numel(results.schemes));
         markers = {'o', 's', '^'};
         leg = {};
+        plotted_ber = [];
         for iCsi = 1:numel(results.kappa_list)
             line_style = '-';
             if iCsi > 1
@@ -25,6 +26,7 @@ for iScenario = 1:numel(results.scenario_labels)
                 y = squeeze(ber(k, 1, :, iCsi, iScenario));
                 bits = squeeze(results.bit_total(k, 1, :, iCsi, iScenario));
                 y = ber_for_plot(y, bits);
+                plotted_ber = [plotted_ber; y(:)]; %#ok<AGROW>
                 semilogy(results.SNR_dB, y, ...
                     [line_style markers{1 + mod(k-1, numel(markers))}], ...
                     'Color', colors(k, :), 'LineWidth', 1.5, 'MarkerSize', 5);
@@ -32,7 +34,7 @@ for iScenario = 1:numel(results.scenario_labels)
                     results.csi_case_labels{iCsi}); %#ok<AGROW>
             end
         end
-        format_ber_axes(cfg_run);
+        format_ber_axes(cfg_run, plotted_ber);
         title(sprintf('BER: %s, perfect vs fixed-var CSI', ...
             results.scenario_labels{iScenario}), 'Interpreter', 'none');
         legend(leg, 'Location', 'southwest', 'Interpreter', 'none');
@@ -48,18 +50,20 @@ for iScenario = 1:numel(results.scenario_labels)
             styles = {'-o', '-s', '-^', '--o', '--s', '--^'};
             leg = {};
             jj = 0;
+            plotted_ber = [];
             for iStrategy = 1:numel(results.strategies)
                 for k = 1:numel(results.schemes)
                     jj = jj + 1;
                     y = squeeze(ber(k, iStrategy, :, iK, iScenario));
                     bits = squeeze(results.bit_total(k, iStrategy, :, iK, iScenario));
                     y = ber_for_plot(y, bits);
+                    plotted_ber = [plotted_ber; y(:)]; %#ok<AGROW>
                     semilogy(results.SNR_dB, y, styles{1 + mod(jj-1, numel(styles))}, ...
                         'LineWidth', 1.4, 'MarkerSize', 5);
                     leg{end+1} = sprintf('%s-%s', results.schemes{k}, results.strategies{iStrategy}); %#ok<AGROW>
                 end
             end
-            format_ber_axes(cfg_run);
+            format_ber_axes(cfg_run, plotted_ber);
             title(sprintf('Delivery BER: %s, kappa=%.2g', ...
                 results.scenario_labels{iScenario}, results.kappa_list(iK)), 'Interpreter', 'none');
             legend(leg, 'Location', 'southwest', 'Interpreter', 'none');
@@ -99,12 +103,14 @@ if isfield(results, 'low_mimo') && ~isempty(results.low_mimo)
     f = figure('Visible', 'off', 'Color', 'w');
     hold on; grid on;
     styles = {'-o', '-s', '-^', '--o', '--s', '--^'};
+    plotted_ber = [];
     for k = 1:numel(low.schemes)
         y = ber_for_plot(low.BER(k, :).', low.bit_total(k, :).');
+        plotted_ber = [plotted_ber; y(:)]; %#ok<AGROW>
         semilogy(low.SNR_dB, y, styles{1 + mod(k-1, numel(styles))}, ...
             'LineWidth', 1.5, 'MarkerSize', 5);
     end
-    format_ber_axes(cfg_run);
+    format_ber_axes(cfg_run, plotted_ber);
     title(sprintf('Low-MIMO waveform/precoding BER (%dx%d, N_s=%d)', ...
         low.array_shape(1), low.array_shape(2), low.N_s), 'Interpreter', 'none');
     legend(low.schemes, 'Location', 'southwest', 'Interpreter', 'none');
@@ -128,12 +134,13 @@ end
 y(y <= 0) = NaN;
 end
 
-function format_ber_axes(cfg_run)
+function format_ber_axes(cfg_run, plotted_ber)
 set(gca, 'YScale', 'log');
 xlabel('SNR (dB)');
 ylabel('BER');
-ylim(cfg_run.ber_y_limits);
-yticks(10.^(-6:0));
+[limits, ticks] = delivery_ber_axis_scale(plotted_ber, cfg_run.ber_y_limits);
+ylim(limits);
+yticks(ticks);
 end
 
 function save_png(fig_handle, out_png)

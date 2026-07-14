@@ -23,6 +23,33 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260714-01] Adaptive BER Decade Axes and Imported Follow-up Results
+
+**Changed**:
+- BER figures now derive their y limits from the actual plotted positive values,
+  round outward to complete log decades, and place one tick per decade.
+- `cfg_run.ber_y_limits=[]` is the new default; an explicit two-element value
+  remains a supported override for reproducible legacy plots.
+- Added the shared `delivery_ber_axis_scale.m` helper to the Online dependency
+  closure.
+
+**Why**:
+- The vMF cv=0.30 figure used a hard-coded `1e-6..1` range even though its
+  plotted values only required `1e-3..1`, leaving three empty decades.
+- Complete-decade bounds keep logarithmic tick spacing visually uniform while
+  adapting to each result.
+
+**Result**:
+- MATLAB R2025a unit tests: 5/5 passed. Runtime plot smoke regenerated the
+  archived vMF and full-stream MAT outputs; vMF selected `1e-3..1` with ticks
+  at `1e-3,1e-2,1e-1,1`.
+- The imported MATLAB Online follow-up establishes `delivery_20260710_222618`
+  as the current 200-frame/SNR, `4x4`, `N_s=m_s=11` six-line OFDM-inclusive
+  result. The strict-iso AFWDM perfect-CSI 15 dB pooled count is
+  `1/12288000 = 8.138020833e-8`.
+
+---
+
 ### [online-20260711-02] Fix Phase-G Scenario Prep: Restore nomask/per-path Baseline (v1 Results Void)
 
 **Changed**:
