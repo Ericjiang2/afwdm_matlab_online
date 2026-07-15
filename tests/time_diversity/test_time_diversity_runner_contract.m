@@ -59,6 +59,35 @@ verifyEqual(testCase, pilot.time_diversity.doppler_modes, ...
 verifyEqual(testCase, production.time_diversity.max_frames, 1500);
 end
 
+function testLowSnrPilotBracketsDetectorTransitionsWithPrimaryScope(testCase)
+cfg = make_delivery_config("time_diversity_low_snr_pilot");
+
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, ...
+    [-10, -6, -2, 0, 2, 8, 10, 12]);
+verifyEqual(testCase, cfg.time_diversity.Lch_values, 6);
+verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm'});
+verifyEqual(testCase, cfg.time_diversity.doppler_modes, ...
+    {'integer', 'fractional'});
+verifyEqual(testCase, cfg.time_diversity.detectors, ...
+    {'block_lmmse', 'gabp'});
+verifyEqual(testCase, cfg.time_diversity.min_frames, 10);
+verifyEqual(testCase, cfg.time_diversity.max_frames, 150);
+verifyEqual(testCase, cfg.time_diversity.target_errors, 100);
+verifyEqual(testCase, cfg.time_diversity.siso_frames, 1);
+verifyEqual(testCase, cfg.time_diversity.siso_SNR_dB_list, 0);
+verifyFalse(testCase, cfg.time_diversity.enable_escalation);
+end
+
+function testLowSnrPilotAdvancesImmutableRunnerIdentity(testCase)
+cfg = make_delivery_config("time_diversity_low_snr_pilot");
+
+manifest = build_time_diversity_run_manifest(cfg, 'baseline');
+
+verifyEqual(testCase, manifest.runner_version, ...
+    'time-diversity-20260715.6');
+verifyEqual(testCase, manifest.profile, 'time_diversity_low_snr_pilot');
+end
+
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
 cfg_run = make_delivery_config("time_diversity_smoke");
 cfg_base = minimal_base_cfg(cfg_run);

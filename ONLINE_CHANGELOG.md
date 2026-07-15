@@ -23,6 +23,30 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-17] Add a Bounded Low-SNR Detector Diagnostic
+
+**Changed**:
+- Added `time_diversity_low_snr_pilot` with
+  `[-10 -6 -2 0 2 8 10 12] dB`, WDM only, `Lch=6`, both Doppler modes, and
+  both co-primary detectors.
+- Kept the 10--150-frame, 100-error adaptive stop, reduced the internal SISO
+  anchor to one frame at 0 dB, and disabled conditional escalation for this
+  diagnostic profile.
+- Advanced the immutable runner identity to `time-diversity-20260715.6`.
+
+**Why**:
+- The completed 8--23 dB pilot bracketed Block-LMMSE near 12 dB but sat above
+  GaBP's observable transition. Two local three-frame probes at 0 dB produced
+  nonzero GaBP BER near `1e-3`, so the follow-up needs low points without
+  repeating DFT/SVD or expanding into Lch/kmax escalation stages.
+
+**Result**:
+- The configuration contract locks the diagnostic grid, primary WDM scope,
+  frame/error budget, one-frame SISO anchor, and no-escalation behavior. Output
+  remains diagnostic evidence and cannot be promoted as a production result.
+
+---
+
 ### [online-20260715-16] Add an Adaptive Six-Hour Pilot Profile
 
 **Changed**:

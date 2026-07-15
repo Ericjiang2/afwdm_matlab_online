@@ -79,6 +79,20 @@ verifyTrue(testCase, gains.claim_eligible);
 verifyEqual(testCase, plan.next_stage, 'lch8');
 end
 
+function testLowSnrDiagnosticStopsWhenEvidenceWouldEscalate(testCase)
+cfg = make_delivery_config("time_diversity_low_snr_pilot");
+gains = struct('doppler_mode', 'fractional', 'gain_db', 0.5, ...
+    'claim_eligible', true);
+
+plan = resolve_time_diversity_escalation('lch6', gains, cfg);
+
+verifyEqual(testCase, plan.next_stage, 'await_evidence');
+verifyEqual(testCase, plan.triggered_doppler_modes, {'fractional'});
+verifyEqual(testCase, plan.Lch_values, 6);
+verifyEqual(testCase, plan.single_variable_change, ...
+    'none; escalation disabled by profile');
+end
+
 function testEligibleDopplerCannotMaskInconclusivePeer(testCase)
 cfg = make_delivery_config("time_diversity_smoke");
 gains = [ ...

@@ -19,6 +19,12 @@ if isempty(triggered_modes)
     end
     return;
 end
+if isfield(cfg_run.time_diversity, 'enable_escalation') && ...
+        ~cfg_run.time_diversity.enable_escalation
+    plan.next_stage = 'await_evidence';
+    plan.single_variable_change = 'none; escalation disabled by profile';
+    return;
+end
 
 switch char(current_stage)
     case 'lch6'
