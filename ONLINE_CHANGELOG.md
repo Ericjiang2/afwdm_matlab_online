@@ -23,6 +23,32 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-14] Calibrate GaBP Convergence for Production
+
+**Changed**:
+- The shared AFWDM/OFWDM GaBP contract now uses 20 maximum iterations and a
+  `1e-3` relative-message tolerance, with damping 0.4 unchanged for both arms.
+- Each BER point persists the per-frame final GaBP residuals and their mean in
+  addition to iterations and non-convergence rates.
+- The immutable runner identity advances to `time-diversity-20260715.3`, so
+  old smoke or production checkpoints cannot be reused silently.
+
+**Why**:
+- The MATLAB Online one-frame smoke and a local fixed-seed five-frame probe
+  showed 100% non-convergence at the former 15-iteration/`1e-4` limit despite
+  stable zero-error hard decisions. The messages normally crossed `1e-3` near
+  iteration 16, so the old cap and threshold mislabeled slow relaxation as a
+  detector failure.
+
+**Result**:
+- TDD locks the public profile and residual evidence fields. A paired local
+  sensitivity probe at 12/20/28 dB used identical channels, bits, and noise:
+  all 36 new-setting detector calls converged, final residual means were below
+  `1e-3`, and every hard decision was bit-identical to the former setting.
+  This is convergence-calibration evidence, not a production BER claim.
+
+---
+
 ### [online-20260715-13] Fingerprint the Recursive MATLAB Dependency Closure
 
 **Changed**:

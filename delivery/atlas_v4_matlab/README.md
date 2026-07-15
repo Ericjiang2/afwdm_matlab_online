@@ -43,6 +43,8 @@ run_online_time_diversity();
 正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK、`12:2:28 dB`，同时跑
 integer/fractional Doppler 与 block-LMMSE/GaBP。基线包含 WDM 主隔离、DFT
 robustness 和 SVD 附录；条件升级只跑证据触发的 Doppler 子场景和 WDM 主对。
+GaBP 两臂共用 damping 0.4、最多 20 次迭代和 `1e-3` 相对消息阈值；结果同时
+保存逐帧最终 residual、平均 residual、平均迭代数与未收敛率，禁止只调一臂。
 最终 MAT、主图、适用阶段的 SVD 附录与四行定量表写入
 `outputs/online_runs/<run_id>/final/`。固定名称产物对应最后一个证据阶段；
 `time_diversity_baseline_*` 明确保留 Lch=6 基线。最终 MAT 同时保存

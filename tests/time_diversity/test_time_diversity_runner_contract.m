@@ -22,7 +22,8 @@ verifyEqual(testCase, cfg.time_diversity.N_s, 11);
 verifyEqual(testCase, cfg.time_diversity.doppler_modes, {'integer', 'fractional'});
 verifyEqual(testCase, cfg.time_diversity.detectors, {'block_lmmse', 'gabp'});
 verifyEqual(testCase, cfg.time_diversity.gabp.damping, 0.4);
-verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 15);
+verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 20);
+verifyEqual(testCase, cfg.time_diversity.gabp.tolerance, 1e-3);
 verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, 12);
 verifyEqual(testCase, cfg.time_diversity.max_frames, 1);
 verifyEqual(testCase, cfg.time_diversity.Lch_values, [4, 6]);
@@ -49,6 +50,22 @@ verifyEqual(testCase, cfg_ofwdm.c1, 0, 'AbsTol', 0);
 verifyEqual(testCase, cfg_ofwdm.c2, 0, 'AbsTol', 0);
 verifyTrue(testCase, audit.same_spatial_basis);
 verifyTrue(testCase, audit.only_temporal_basis_differs);
+end
+
+function testGabpResultPersistsFinalResiduals(testCase)
+cfg = make_delivery_config("time_diversity_smoke");
+cfg.time_diversity.Lch_values = 6;
+cfg.time_diversity.doppler_modes = {'integer'};
+cfg.time_diversity.detectors = {'gabp'};
+cfg.time_diversity.spatial_pairs = {'wdm'};
+
+results = run_time_diversity_ber(cfg);
+point = results.runs(1).points(1);
+
+verifySize(testCase, point.final_residuals, [2, 1]);
+verifyTrue(testCase, all(isfinite(point.final_residuals), 'all'));
+verifyEqual(testCase, point.average_final_residual, point.final_residuals, ...
+    'AbsTol', 1e-15);
 end
 
 function testLchSweepChangesOnlyPathCount(testCase)

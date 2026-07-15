@@ -47,6 +47,7 @@ for iLch = 1:numel(td.Lch_values)
                     error_ofwdm = false(bits_per_frame, td.max_frames);
                     iterations = zeros(2, td.max_frames);
                     converged = false(2, td.max_frames);
+                    final_residuals = nan(2, td.max_frames);
                     stop_reason = 'continue';
 
                     for frame = 1:td.max_frames
@@ -76,6 +77,8 @@ for iLch = 1:numel(td.Lch_values)
                         error_ofwdm(:, frame) = pair.error_b;
                         iterations(:, frame) = [pair.detector_a.iterations; pair.detector_b.iterations];
                         converged(:, frame) = [pair.detector_a.converged; pair.detector_b.converged];
+                        final_residuals(:, frame) = [detector_final_residual(pair.detector_a); ...
+                            detector_final_residual(pair.detector_b)];
 
                         [stop, stop_reason] = paired_stop_decision( ...
                             [sum(error_afwdm(:, 1:frame), 'all'), ...
@@ -97,6 +100,9 @@ for iLch = 1:numel(td.Lch_values)
                     stats.stop_reason = stop_reason;
                     stats.average_iterations = mean(iterations(:, 1:frame), 2);
                     stats.nonconvergence_rate = mean(~converged(:, 1:frame), 2);
+                    stats.final_residuals = final_residuals(:, 1:frame);
+                    stats.average_final_residual = mean( ...
+                        stats.final_residuals, 2, 'omitnan');
                     stats.error_table_afwdm = error_afwdm;
                     stats.error_table_ofwdm = error_ofwdm;
                     points(iSNR) = stats;
@@ -145,7 +151,16 @@ point = struct( ...
     'mcnemar_p', NaN, 'noise_limited', true, 'claim_eligible', false, ...
     'ber_ratio_ci', [NaN, NaN], 'stop_reason', '', ...
     'average_iterations', [NaN; NaN], 'nonconvergence_rate', [NaN; NaN], ...
+    'final_residuals', nan(2, 0), 'average_final_residual', [NaN; NaN], ...
     'error_table_afwdm', false(0, 0), 'error_table_ofwdm', false(0, 0));
+end
+
+function residual = detector_final_residual(info)
+residual = NaN;
+if isfield(info, 'residual') && isscalar(info.residual) && ...
+        isfinite(info.residual)
+    residual = info.residual;
+end
 end
 
 function opts = detector_options(td, detector)
