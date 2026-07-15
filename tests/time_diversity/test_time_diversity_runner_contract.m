@@ -31,6 +31,14 @@ verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm', 'dft', 'svd'});
 verifyEqual(testCase, cfg.time_diversity.summary_target_ber, 1e-3);
 end
 
+function testOnlineProfileUsesFocusedNonuniformSnrGrid(testCase)
+cfg = make_delivery_config("time_diversity_online");
+expected_snr_db = [8, 10, 12, 14, 17, 20, 23];
+
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, expected_snr_db);
+verifyEqual(testCase, cfg.time_diversity.siso_SNR_dB_list, expected_snr_db);
+end
+
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
 cfg_run = make_delivery_config("time_diversity_smoke");
 cfg_base = minimal_base_cfg(cfg_run);

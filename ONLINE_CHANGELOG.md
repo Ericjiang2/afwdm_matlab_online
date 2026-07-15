@@ -23,6 +23,29 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-15] Focus the Production SNR Grid
+
+**Changed**:
+- The production MIMO and internal SISO grids now use
+  `[8 10 12 14 17 20 23] dB` instead of `12:2:28 dB`.
+- The immutable runner identity advances to `time-diversity-20260715.4`, so
+  checkpoints created with the former grid cannot be reused silently.
+
+**Why**:
+- The calibrated smoke already produced zero observed errors at 12 dB in one
+  frame. Starting at 12 dB risked spending most of the adaptive frame budget
+  on noise-limited points while never bracketing the BER transition.
+- The focused grid retains 2 dB resolution around the target region, uses a
+  coarser 3 dB high-SNR tail, and removes the especially expensive 26/28 dB
+  points. This changes measurement placement, not detector fairness or the
+  stopping rule.
+
+**Result**:
+- TDD locks the same seven-point grid for production MIMO and the SISO anchor.
+  The smoke profile remains the one-frame 12 dB execution check.
+
+---
+
 ### [online-20260715-14] Calibrate GaBP Convergence for Production
 
 **Changed**:

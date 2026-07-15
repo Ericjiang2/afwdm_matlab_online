@@ -40,7 +40,9 @@ run_online_time_diversity();
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
 每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，
 必须换新的 run id，禁止静默混用旧 checkpoint。
-正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK、`12:2:28 dB`，同时跑
+正式配置锁定 `4x4`、`N_s=m_s=11`、`Nblk=64`、QPSK，并使用
+`[8 10 12 14 17 20 23] dB` 的非均匀 SNR 网格：目标 BER 附近保留 2 dB
+分辨率，高 SNR 尾部改为 3 dB 间隔并去掉最耗时的 26/28 dB 点。同时跑
 integer/fractional Doppler 与 block-LMMSE/GaBP。基线包含 WDM 主隔离、DFT
 robustness 和 SVD 附录；条件升级只跑证据触发的 Doppler 子场景和 WDM 主对。
 GaBP 两臂共用 damping 0.4、最多 20 次迭代和 `1e-3` 相对消息阈值；结果同时
