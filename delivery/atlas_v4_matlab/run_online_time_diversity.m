@@ -13,9 +13,11 @@ if nargin < 1 || isempty(profile)
     profile = "time_diversity_online";
 end
 profile = lower(string(profile));
-if ~ismember(profile, ["time_diversity_online", "time_diversity_smoke"])
+if ~ismember(profile, ["time_diversity_online", "time_diversity_pilot", ...
+        "time_diversity_smoke"])
     error('run_online_time_diversity:profile', ...
-        'Profile must be time_diversity_online or time_diversity_smoke.');
+        ['Profile must be time_diversity_online, time_diversity_pilot, ' ...
+         'or time_diversity_smoke.']);
 end
 
 cfg0 = make_delivery_config(profile);

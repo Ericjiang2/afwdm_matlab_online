@@ -39,6 +39,26 @@ verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, expected_snr_db);
 verifyEqual(testCase, cfg.time_diversity.siso_SNR_dB_list, expected_snr_db);
 end
 
+function testPilotProfileKeepsScienceContractWithBoundedFrameCap(testCase)
+pilot = make_delivery_config("time_diversity_pilot");
+production = make_delivery_config("time_diversity_online");
+
+verifyEqual(testCase, pilot.time_diversity.SNR_dB_list, ...
+    [8, 10, 12, 14, 17, 20, 23]);
+verifyEqual(testCase, pilot.time_diversity.max_frames, 150);
+verifyEqual(testCase, pilot.time_diversity.min_frames, ...
+    production.time_diversity.min_frames);
+verifyEqual(testCase, pilot.time_diversity.target_errors, ...
+    production.time_diversity.target_errors);
+verifyEqual(testCase, pilot.time_diversity.detectors, ...
+    production.time_diversity.detectors);
+verifyEqual(testCase, pilot.time_diversity.spatial_pairs, ...
+    production.time_diversity.spatial_pairs);
+verifyEqual(testCase, pilot.time_diversity.doppler_modes, ...
+    production.time_diversity.doppler_modes);
+verifyEqual(testCase, production.time_diversity.max_frames, 1500);
+end
+
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
 cfg_run = make_delivery_config("time_diversity_smoke");
 cfg_base = minimal_base_cfg(cfg_run);

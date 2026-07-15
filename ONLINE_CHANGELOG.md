@@ -23,6 +23,29 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260715-16] Add an Adaptive Six-Hour Pilot Profile
+
+**Changed**:
+- Added `time_diversity_pilot`, using the production seven-point SNR grid and
+  the same paired 100-error adaptive stop, but with `max_frames=150` instead
+  of 1500.
+- `run_online_time_diversity` accepts the pilot profile without introducing a
+  second runner or a separate simulation implementation.
+- The immutable runner identity advances to `time-diversity-20260715.5`.
+
+**Why**:
+- MATLAB Online sessions can disconnect during a long run. A bounded pilot
+  lets low-SNR points stop quickly while allocating more frames to high-SNR
+  points, with the existing per-SNR checkpoints still providing recovery.
+
+**Result**:
+- The public configuration contract locks the pilot to the production SNR,
+  detector, spatial-pair, Doppler, target-error, and minimum-frame settings;
+  only the maximum frame budget differs. Pilot output remains preliminary and
+  cannot be promoted as a production claim.
+
+---
+
 ### [online-20260715-15] Focus the Production SNR Grid
 
 **Changed**:

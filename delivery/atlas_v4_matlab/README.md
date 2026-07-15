@@ -36,7 +36,21 @@ addpath('delivery/atlas_v4_matlab');
 run_online_time_diversity();
 ```
 
-它使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
+首次建议先跑约 4--6 小时的自适应 pilot：
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+package = run_online_time_diversity('time_diversity_pilot', ...
+    'time_diversity_pilot_v5_20260715');
+```
+
+pilot 与正式版使用相同的 7 点 SNR、物理参数、检测器、公平配对和停止逻辑：
+每点至少 10 帧，较优臂累计 100 errors 后立即停止；差别仅是高 SNR 的
+兜底上限从 1500 降到 150 帧。本机标定的 7 点基线全满约 4.2 小时，
+加上条件阶段通常约 4--6 小时。pilot 的 noise-limited 点和统计量只用于
+选正式运行范围、检查耗时与趋势，不作为 production claim。
+
+正式入口使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
 每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，
 必须换新的 run id，禁止静默混用旧 checkpoint。

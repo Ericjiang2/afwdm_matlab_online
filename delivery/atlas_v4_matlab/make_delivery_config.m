@@ -12,6 +12,7 @@ function cfg_run = make_delivery_config(mode)
 %   cfg_run = make_delivery_config("paperfig_vmf");
 %   cfg_run = make_delivery_config("paperfig_capacity");
 %   cfg_run = make_delivery_config("paperfig_low_mimo");
+%   cfg_run = make_delivery_config("time_diversity_pilot");
 %
 % 交付版主路线:
 %   - BER: AFWDM / DFT_precoded / SVD_paper
@@ -199,7 +200,7 @@ switch mode
         cfg_run.capacity_scenarios = vmf_capacity_scenarios([0.01, 0.30, 1.00]);
         cfg_run.quick_stream_cap = [];
 
-    case {"time_diversity_smoke", "time_diversity_online"}
+    case {"time_diversity_smoke", "time_diversity_pilot", "time_diversity_online"}
         cfg_run.array_shape = [4, 4];
         cfg_run.v_max_kmh = 860;      % kmax=2 at fc=4 GHz, Deltaf=2 kHz.
         cfg_run.tau_max_us = 32;      % lmax=5; diversity lhs=29<64.
@@ -244,6 +245,11 @@ switch mode
             cfg_run.time_diversity.bootstrap_samples = 200;
             cfg_run.time_diversity.siso_frames = 1;
             cfg_run.time_diversity.siso_SNR_dB_list = 12;
+        elseif mode == "time_diversity_pilot"
+            % Same adaptive stopping rule as production, with a bounded cap:
+            % low-SNR points stop after reaching 100 errors; high-SNR points
+            % can use up to 150 frames before being marked noise-limited.
+            cfg_run.time_diversity.max_frames = 150;
         end
 
     case {"paperfig", "paperfig_iso", "paperfig_vmf", "paperfig_capacity", "paperfig_low_mimo"}
@@ -298,7 +304,8 @@ switch mode
     otherwise
         error('make_delivery_config:unknownMode', ...
             ['Unknown mode "%s". Use quick, smoke, fullmini, local2min, paper, ' ...
-             'paperfig*, time_diversity_smoke, or time_diversity_online.'], mode);
+             'paperfig*, time_diversity_smoke, time_diversity_pilot, ' ...
+             'or time_diversity_online.'], mode);
 end
 
 end

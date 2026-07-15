@@ -15,7 +15,7 @@ contract.time_diversity = cfg_run.time_diversity;
 
 manifest = struct();
 manifest.schema_version = 1;
-manifest.runner_version = 'time-diversity-20260715.4';
+manifest.runner_version = 'time-diversity-20260715.5';
 manifest.stage = char(stage_name);
 manifest.profile = cfg_run.mode;
 manifest.config_fingerprint = sha256_bytes(unicode2native(jsonencode(contract), 'UTF-8'));
