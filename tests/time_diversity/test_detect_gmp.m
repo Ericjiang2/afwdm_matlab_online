@@ -45,6 +45,26 @@ verifyLessThanOrEqual(testCase, err_gmp, err_lmmse + 2);
 verifyEqual(testCase, first_info.edge_count, numel(H));
 end
 
+function testDiagnosticIterationCapAllowsSixty(testCase)
+bits = logical([0; 0; 0; 1; 1; 0; 1; 1]);
+x = qam_modulate(bits, 4);
+opts = struct('damping', 0.4, 'max_iterations', 60, ...
+    'tolerance', 1e-6, 'edge_threshold_rel', 0, 'regularization', 1e-10);
+
+[x_hat, info] = detect_gmp(eye(numel(x)), x, 1e-6, 4, opts);
+
+verifyEqual(testCase, qam_demodulate(x_hat, 4), double(bits));
+verifyEqual(testCase, info.max_iterations, 60);
+end
+
+function testDiagnosticIterationCapRejectsAboveSixty(testCase)
+opts = struct('max_iterations', 61);
+
+verifyError(testCase, ...
+    @() detect_gmp(eye(2), ones(2, 1), 1, 4, opts), ...
+    'MATLAB:notLessEqual');
+end
+
 function testInvalidDampingFailsExplicitly(testCase)
 opts = struct('damping', 1.2);
 verifyError(testCase, @() detect_gmp(eye(2), ones(2, 1), 1, 4, opts), ...

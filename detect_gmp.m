@@ -20,7 +20,7 @@ opts = apply_defaults(opts, struct( ...
 if opts.damping < 0.3 || opts.damping > 0.5
     error('detect_gmp:damping', 'Damping must be in the locked range [0.3, 0.5].');
 end
-validateattributes(opts.max_iterations, {'numeric'}, {'scalar', 'integer', '>=', 10, '<=', 20});
+validateattributes(opts.max_iterations, {'numeric'}, {'scalar', 'integer', '>=', 10, '<=', 60});
 validateattributes(opts.tolerance, {'numeric'}, {'scalar', 'positive'});
 validateattributes(opts.edge_threshold_rel, {'numeric'}, {'scalar', 'nonnegative', '<', 1});
 validateattributes(opts.regularization, {'numeric'}, {'scalar', 'positive'});

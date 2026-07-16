@@ -64,6 +64,19 @@ integer/fractional Doppler 和 Block-LMMSE/GaBP。每点仍采用 10--150 帧、
 它用于同时定位 GaBP 的低 SNR 转折和 Block-LMMSE 的 8--12 dB 转折，
 不是 production profile，也不复用旧 pilot 的 run id/checkpoint。
 
+低 SNR 审计后的独立 4 dB 补点入口：
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+package = run_online_time_diversity('time_diversity_4db_followup', ...
+    'time_diversity_4db_followup_v7_20260716');
+```
+
+该 profile 只跑 4 dB、WDM、`Lch=6`、两种 Doppler 和两种 detector，保持
+10--150 帧/100 errors、GaBP 20 iterations 和禁用条件升级。GaBP 函数允许
+最多 60 iterations 仅用于本地敏感性诊断；4 dB 补点不采用该诊断上限，因而
+可与 v6 的 20-iteration 结果直接比较。
+
 正式入口使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
 每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，

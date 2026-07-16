@@ -84,8 +84,32 @@ cfg = make_delivery_config("time_diversity_low_snr_pilot");
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260715.6');
+    'time-diversity-20260716.7');
 verifyEqual(testCase, manifest.profile, 'time_diversity_low_snr_pilot');
+end
+
+function testFourDbFollowupAddsOnlyTheRequestedComparablePoint(testCase)
+cfg = make_delivery_config("time_diversity_4db_followup");
+
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, 4);
+verifyEqual(testCase, cfg.time_diversity.Lch_values, 6);
+verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm'});
+verifyEqual(testCase, cfg.time_diversity.doppler_modes, ...
+    {'integer', 'fractional'});
+verifyEqual(testCase, cfg.time_diversity.detectors, ...
+    {'block_lmmse', 'gabp'});
+verifyEqual(testCase, cfg.time_diversity.min_frames, 10);
+verifyEqual(testCase, cfg.time_diversity.max_frames, 150);
+verifyEqual(testCase, cfg.time_diversity.target_errors, 100);
+verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 20);
+verifyEqual(testCase, cfg.time_diversity.siso_frames, 1);
+verifyEqual(testCase, cfg.time_diversity.siso_SNR_dB_list, 4);
+verifyFalse(testCase, cfg.time_diversity.enable_escalation);
+
+manifest = build_time_diversity_run_manifest(cfg, 'baseline');
+verifyEqual(testCase, manifest.runner_version, ...
+    'time-diversity-20260716.7');
+verifyEqual(testCase, manifest.profile, 'time_diversity_4db_followup');
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)

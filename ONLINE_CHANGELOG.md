@@ -23,6 +23,35 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260716-01] Add a Comparable 4 dB Follow-up and Iteration Audit Range
+
+**Changed**:
+- Added `time_diversity_4db_followup`, restricted to 4 dB, WDM, `Lch=6`, both
+  Doppler modes/detectors, the existing 10--150-frame/100-error stop, and no
+  conditional escalation.
+- Kept the follow-up GaBP contract at 20 iterations so it remains directly
+  comparable with the v6 low-SNR pilot.
+- Widened only the detector's accepted diagnostic iteration range from 20 to
+  60; every shipped Online profile still defaults to 20 iterations.
+- Advanced the immutable runner identity to `time-diversity-20260716.7`.
+
+**Why**:
+- The v6 result located GaBP's transition between 0 and 2 dB but showed severe
+  non-convergence at -2/0 dB. A same-seed 20/40/60-iteration audit requires the
+  detector to accept diagnostic caps above 20, while the user-requested 4 dB
+  point must preserve the original detector contract.
+
+**Result**:
+- Contract tests lock the one-point scope, default 20-iteration setting,
+  no-escalation behavior, diagnostic maximum, and new runner identity. The 4 dB
+  output remains supplemental pilot evidence, not a production result.
+- MATLAB R2025a time-diversity tests pass 38/38 and changed-file `checkcode`
+  reports no issues. A one-frame 4 dB wiring smoke completes all four WDM runs;
+  its GaBP arms observe zero errors, consistent with the point being diagnostic
+  and likely noise-limited under the 150-frame cap.
+
+---
+
 ### [online-20260715-17] Add a Bounded Low-SNR Detector Diagnostic
 
 **Changed**:
