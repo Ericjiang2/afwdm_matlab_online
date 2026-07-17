@@ -23,6 +23,29 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260717-02] Widen the Fractional-GaBP Grid and Tail Budget
+
+**Changed**:
+- Expanded `time_diversity_fractional_gabp_exploration` from
+  `[-4 -2 0 1 2] dB` to `[-8 -6 -4 -2 0 1 2 4] dB` and raised only its
+  per-point maximum from 300 to 500 frames. The 10-frame minimum, 100-error
+  target, four physical stages, paired seeds, fractional WDM scope, GaBP
+  40-iteration contract, and supplemental per-stream detector remain fixed.
+- Advanced the immutable runner identity to `time-diversity-20260717.9` and
+  assigned a new v9 run id. v8 checkpoints remain historical and incompatible.
+
+**Why**:
+- The completed v8 curves cover only -4 through 2 dB and visually compress the
+  waterfall into a narrow interval. The added -8/-6 dB points expose the left
+  transition, while 4 dB extends the tail for a preliminary slope check.
+
+**Expected result and boundary**:
+- This is still candidate exploration. At the observed decay rate, 4 dB may
+  remain noise-limited even at 500 frames; it must be reported with raw
+  bit/error counts and cannot by itself establish a diversity-order change.
+
+---
+
 ### [online-20260717-01] Add a Pre-Registered Fractional-GaBP Exploration
 
 **Changed**:

@@ -283,12 +283,12 @@ switch mode
             % Pre-registered fractional-Doppler mechanism exploration. The
             % public runner executes all stages in order; no observed gap can
             % select or suppress a detector or physical stage.
-            cfg_run.time_diversity.SNR_dB_list = [-4, -2, 0, 1, 2];
+            cfg_run.time_diversity.SNR_dB_list = [-8, -6, -4, -2, 0, 1, 2, 4];
             cfg_run.time_diversity.spatial_pairs = {'wdm'};
             cfg_run.time_diversity.doppler_modes = {'fractional'};
             cfg_run.time_diversity.detectors = {'gabp', 'per_stream_lmmse'};
             cfg_run.time_diversity.Lch_values = 6;
-            cfg_run.time_diversity.max_frames = 300;
+            cfg_run.time_diversity.max_frames = 500;
             cfg_run.time_diversity.gabp.max_iterations = 40;
             cfg_run.time_diversity.siso_frames = 1;
             cfg_run.time_diversity.siso_SNR_dB_list = 0;

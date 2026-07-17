@@ -84,7 +84,7 @@ cfg = make_delivery_config("time_diversity_low_snr_pilot");
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.8');
+    'time-diversity-20260717.9');
 verifyEqual(testCase, manifest.profile, 'time_diversity_low_snr_pilot');
 end
 
@@ -108,21 +108,22 @@ verifyFalse(testCase, cfg.time_diversity.enable_escalation);
 
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.8');
+    'time-diversity-20260717.9');
 verifyEqual(testCase, manifest.profile, 'time_diversity_4db_followup');
 end
 
 function testFractionalGabpExplorationProfileFreezesApprovedMatrix(testCase)
 cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
 
-verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, [-4, -2, 0, 1, 2]);
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, ...
+    [-8, -6, -4, -2, 0, 1, 2, 4]);
 verifyEqual(testCase, cfg.time_diversity.Lch_values, 6);
 verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm'});
 verifyEqual(testCase, cfg.time_diversity.doppler_modes, {'fractional'});
 verifyEqual(testCase, cfg.time_diversity.detectors, ...
     {'gabp', 'per_stream_lmmse'});
 verifyEqual(testCase, cfg.time_diversity.min_frames, 10);
-verifyEqual(testCase, cfg.time_diversity.max_frames, 300);
+verifyEqual(testCase, cfg.time_diversity.max_frames, 500);
 verifyEqual(testCase, cfg.time_diversity.target_errors, 100);
 verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 40);
 verifyEqual(testCase, cfg.time_diversity.siso_frames, 1);
@@ -141,7 +142,7 @@ verifyEqual(testCase, [cfg.time_diversity.explicit_stages.tau_max_us], ...
 
 manifest = build_time_diversity_run_manifest(cfg, 'run');
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.8');
+    'time-diversity-20260717.9');
 verifyEqual(testCase, manifest.profile, ...
     'time_diversity_fractional_gabp_exploration');
 end
@@ -163,7 +164,7 @@ verifyEqual(testCase, [audits.lmax], [5, 5, 5, 7]);
 verifyEqual(testCase, [audits.diversity_lhs], [29, 29, 41, 55]);
 verifyTrue(testCase, all([audits.diversity_condition_passed]));
 verifyEqual(testCase, stages(4).cfg.time_diversity.gabp.max_iterations, 40);
-verifyEqual(testCase, stages(4).cfg.time_diversity.max_frames, 300);
+verifyEqual(testCase, stages(4).cfg.time_diversity.max_frames, 500);
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)
