@@ -75,16 +75,11 @@ plan = update_dimension_audit(plan, cfg_run);
 end
 
 function plan = update_dimension_audit(plan, cfg_run)
-lambda = 3e8 / cfg_run.fc;
-v_max = plan.v_max_kmh / 3.6;
-plan.kmax = ceil((v_max / lambda) / cfg_run.Deltaf);
-Ts = 1 / (cfg_run.Nblk * cfg_run.Deltaf);
-plan.lmax = ceil((cfg_run.tau_max_us * 1e-6) / Ts);
-plan.diversity_lhs = 2 * plan.kmax * (plan.lmax + 1) + plan.lmax;
-plan.diversity_condition_passed = plan.diversity_lhs < cfg_run.Nblk;
-if ~plan.diversity_condition_passed
-    error('resolve_time_diversity_escalation:diversityCondition', ...
-        'Escalation violates AFDM diversity condition: %d < %d is false.', ...
-        plan.diversity_lhs, cfg_run.Nblk);
-end
+audit_cfg = cfg_run;
+audit_cfg.v_max_kmh = plan.v_max_kmh;
+audit = audit_time_diversity_dimensions(audit_cfg);
+plan.kmax = audit.kmax;
+plan.lmax = audit.lmax;
+plan.diversity_lhs = audit.diversity_lhs;
+plan.diversity_condition_passed = audit.diversity_condition_passed;
 end

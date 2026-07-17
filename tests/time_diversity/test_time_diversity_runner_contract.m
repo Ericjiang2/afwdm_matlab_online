@@ -84,7 +84,7 @@ cfg = make_delivery_config("time_diversity_low_snr_pilot");
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260716.7');
+    'time-diversity-20260717.8');
 verifyEqual(testCase, manifest.profile, 'time_diversity_low_snr_pilot');
 end
 
@@ -108,8 +108,62 @@ verifyFalse(testCase, cfg.time_diversity.enable_escalation);
 
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260716.7');
+    'time-diversity-20260717.8');
 verifyEqual(testCase, manifest.profile, 'time_diversity_4db_followup');
+end
+
+function testFractionalGabpExplorationProfileFreezesApprovedMatrix(testCase)
+cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
+
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, [-4, -2, 0, 1, 2]);
+verifyEqual(testCase, cfg.time_diversity.Lch_values, 6);
+verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm'});
+verifyEqual(testCase, cfg.time_diversity.doppler_modes, {'fractional'});
+verifyEqual(testCase, cfg.time_diversity.detectors, ...
+    {'gabp', 'per_stream_lmmse'});
+verifyEqual(testCase, cfg.time_diversity.min_frames, 10);
+verifyEqual(testCase, cfg.time_diversity.max_frames, 300);
+verifyEqual(testCase, cfg.time_diversity.target_errors, 100);
+verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 40);
+verifyEqual(testCase, cfg.time_diversity.siso_frames, 1);
+verifyEqual(testCase, cfg.time_diversity.siso_SNR_dB_list, 0);
+verifyFalse(testCase, cfg.time_diversity.enable_escalation);
+
+expected_names = {'anchor_lch6_kmax2_tau32', 'lch8_kmax2_tau32', ...
+    'lch8_kmax3_tau32', 'lch8_kmax3_tau48'};
+verifyEqual(testCase, {cfg.time_diversity.explicit_stages.name}, ...
+    expected_names);
+verifyEqual(testCase, [cfg.time_diversity.explicit_stages.Lch], [6, 8, 8, 8]);
+verifyEqual(testCase, [cfg.time_diversity.explicit_stages.v_max_kmh], ...
+    [860, 860, 1100, 1100]);
+verifyEqual(testCase, [cfg.time_diversity.explicit_stages.tau_max_us], ...
+    [32, 32, 32, 48]);
+
+manifest = build_time_diversity_run_manifest(cfg, 'run');
+verifyEqual(testCase, manifest.runner_version, ...
+    'time-diversity-20260717.8');
+verifyEqual(testCase, manifest.profile, ...
+    'time_diversity_fractional_gabp_exploration');
+end
+
+function testFractionalGabpExplorationStagesChangeOneVariableAtATime(testCase)
+cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
+
+stages = build_time_diversity_exploration_stages(cfg);
+audits = [stages.audit];
+
+verifyEqual(testCase, {stages.name}, ...
+    {'anchor_lch6_kmax2_tau32', 'lch8_kmax2_tau32', ...
+     'lch8_kmax3_tau32', 'lch8_kmax3_tau48'});
+verifyEqual(testCase, {stages.single_variable_change}, ...
+    {'none; comparable Lch=6 anchor', 'Lch:6->8', ...
+     'v_max_kmh:860->1100 (kmax:2->3)', 'tau_max_us:32->48'});
+verifyEqual(testCase, [audits.kmax], [2, 2, 3, 3]);
+verifyEqual(testCase, [audits.lmax], [5, 5, 5, 7]);
+verifyEqual(testCase, [audits.diversity_lhs], [29, 29, 41, 55]);
+verifyTrue(testCase, all([audits.diversity_condition_passed]));
+verifyEqual(testCase, stages(4).cfg.time_diversity.gabp.max_iterations, 40);
+verifyEqual(testCase, stages(4).cfg.time_diversity.max_frames, 300);
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)

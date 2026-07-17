@@ -15,10 +15,12 @@ end
 profile = lower(string(profile));
 if ~ismember(profile, ["time_diversity_online", "time_diversity_pilot", ...
         "time_diversity_low_snr_pilot", "time_diversity_4db_followup", ...
+        "time_diversity_fractional_gabp_exploration", ...
         "time_diversity_smoke"])
     error('run_online_time_diversity:profile', ...
         ['Profile must be time_diversity_online, time_diversity_pilot, ' ...
          'time_diversity_low_snr_pilot, time_diversity_4db_followup, ' ...
+         'time_diversity_fractional_gabp_exploration, ' ...
          'or time_diversity_smoke.']);
 end
 
@@ -59,8 +61,19 @@ if isfile(final_mat)
 end
 
 fprintf('Time-diversity run %s (%s)\n', run_id, profile);
-baseline = run_stage(cfg0, 'baseline', checkpoint_dir);
-current_cfg = cfg0;
+is_explicit_exploration = isfield(cfg0.time_diversity, 'explicit_stages') && ...
+    ~isempty(cfg0.time_diversity.explicit_stages);
+if is_explicit_exploration
+    stage_plan = build_time_diversity_exploration_stages(cfg0);
+    baseline_cfg = stage_plan(1).cfg;
+    baseline_stage_name = stage_plan(1).name;
+else
+    stage_plan = [];
+    baseline_cfg = cfg0;
+    baseline_stage_name = 'baseline';
+end
+baseline = run_stage(baseline_cfg, baseline_stage_name, checkpoint_dir);
+current_cfg = baseline_cfg;
 current_results = baseline;
 current_stage = 'lch6';
 mode_states = initialize_time_diversity_mode_states( ...
@@ -68,30 +81,47 @@ mode_states = initialize_time_diversity_mode_states( ...
 stages = cell(1, 3);
 stage_count = 0;
 
-while true
-    gains = build_time_diversity_gain_records(current_results.summary_table, ...
-        current_cfg.time_diversity.doppler_modes);
-    plan = resolve_time_diversity_escalation(current_stage, gains, cfg0);
-    mode_states = update_time_diversity_mode_states( ...
-        mode_states, gains, current_stage, plan.next_stage);
-    if ismember(plan.next_stage, {'complete', 'await_evidence', 'fail_closed'})
-        break;
+if is_explicit_exploration
+    for ii = 2:numel(stage_plan)
+        next_results = run_stage( ...
+            stage_plan(ii).cfg, stage_plan(ii).name, checkpoint_dir);
+        stage_count = stage_count + 1;
+        trigger_plan = rmfield(stage_plan(ii), 'cfg');
+        stages{stage_count} = struct('name', stage_plan(ii).name, ...
+            'trigger_plan', trigger_plan, 'results', next_results);
+        current_cfg = stage_plan(ii).cfg;
+        current_results = next_results;
     end
+    [plan, mode_states, outcome] = build_time_diversity_exploration_completion( ...
+        stage_plan, current_results, current_cfg);
+else
+    while true
+        gains = build_time_diversity_gain_records(current_results.summary_table, ...
+            current_cfg.time_diversity.doppler_modes);
+        plan = resolve_time_diversity_escalation(current_stage, gains, cfg0);
+        mode_states = update_time_diversity_mode_states( ...
+            mode_states, gains, current_stage, plan.next_stage);
+        if ismember(plan.next_stage, {'complete', 'await_evidence', 'fail_closed'})
+            break;
+        end
 
-    next_cfg = apply_time_diversity_escalation(current_cfg, plan);
-    next_results = run_stage(next_cfg, plan.next_stage, checkpoint_dir);
-    stage_count = stage_count + 1;
-    stages{stage_count} = struct('name', plan.next_stage, ...
-        'trigger_plan', plan, 'results', next_results);
-    current_cfg = next_cfg;
-    current_results = next_results;
-    current_stage = plan.next_stage;
+        next_cfg = apply_time_diversity_escalation(current_cfg, plan);
+        next_results = run_stage(next_cfg, plan.next_stage, checkpoint_dir);
+        stage_count = stage_count + 1;
+        stages{stage_count} = struct('name', plan.next_stage, ...
+            'trigger_plan', plan, 'results', next_results);
+        current_cfg = next_cfg;
+        current_results = next_results;
+        current_stage = plan.next_stage;
+    end
 end
 stages = stages(1:stage_count);
 
 siso_anchor = run_time_diversity_siso_anchor(cfg0);
 [final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
-outcome = build_time_diversity_outcome(plan, final_stage, current_cfg, mode_states);
+if ~is_explicit_exploration
+    outcome = build_time_diversity_outcome(plan, final_stage, current_cfg, mode_states);
+end
 plan.overall_status = outcome.status;
 plan.per_doppler = mode_states;
 package = struct();
@@ -107,6 +137,7 @@ package.metadata = struct( ...
     'profile', char(profile), ...
     'generated_by', 'delivery/atlas_v4_matlab/run_online_time_diversity.m', ...
     'checkpoint_granularity', 'stage_per_snr', ...
+    'scientific_label', char(scientific_label(is_explicit_exploration)), ...
     'siso_internal_only', true, ...
     'timestamp', char(datetime('now', 'Format', "yyyyMMdd'T'HHmmss")));
 
@@ -119,6 +150,14 @@ for ii = 1:numel(stages)
 end
 save(final_mat, 'package', 'cfg0', 'run_manifest', '-v7');
 fprintf('Time-diversity final package: %s\n', final_mat);
+end
+
+function label = scientific_label(is_explicit_exploration)
+if is_explicit_exploration
+    label = "candidate_exploration";
+else
+    label = "profile_defined";
+end
 end
 
 function results = run_stage(cfg_stage, stage_name, checkpoint_dir)

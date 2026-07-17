@@ -1,5 +1,5 @@
 function files = plot_time_diversity_results(results, cfg_run, output_dir, file_prefix)
-%PLOT_TIME_DIVERSITY_RESULTS MIMO main/appendix figures and four-row table.
+%PLOT_TIME_DIVERSITY_RESULTS MIMO figures and available-run summary table.
 
 if nargin < 4 || isempty(file_prefix)
     file_prefix = 'time_diversity';
@@ -35,15 +35,19 @@ end
 end
 
 function plot_pair_grid(runs, spatial_pairs, output_file, title_text)
-doppler_modes = {'integer', 'fractional'};
-detectors = {'block_lmmse', 'gabp'};
-fig = figure('Visible', 'off', 'Color', 'w', 'Position', [100, 100, 1100, 760]);
-layout = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+doppler_modes = unique({runs.doppler_mode}, 'stable');
+detectors = unique({runs.detector}, 'stable');
+n_rows = numel(doppler_modes);
+n_columns = numel(detectors);
+fig = figure('Visible', 'off', 'Color', 'w', ...
+    'Position', [100, 100, max(720, 520 * n_columns), max(520, 360 * n_rows)]);
+layout = tiledlayout(fig, n_rows, n_columns, ...
+    'TileSpacing', 'compact', 'Padding', 'compact');
 colors = struct('wdm', [0.00, 0.35, 0.75], 'dft', [0.55, 0.70, 0.88], ...
     'svd', [0.35, 0.35, 0.35]);
 
-for iDoppler = 1:2
-    for iDetector = 1:2
+for iDoppler = 1:n_rows
+    for iDetector = 1:n_columns
         nexttile;
         hold on; grid on;
         plotted = [];

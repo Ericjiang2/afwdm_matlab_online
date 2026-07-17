@@ -77,6 +77,24 @@ package = run_online_time_diversity('time_diversity_4db_followup', ...
 最多 60 iterations 仅用于本地敏感性诊断；4 dB 补点不采用该诊断上限，因而
 可与 v6 的 20-iteration 结果直接比较。
 
+Fractional GaBP 单变量阶段探索入口：
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+package = run_online_time_diversity( ...
+    'time_diversity_fractional_gabp_exploration', ...
+    'time_diversity_fractional_gabp_exploration_v8_20260717');
+```
+
+该 candidate profile 只跑 fractional Doppler、WDM 和
+`[-4 -2 0 1 2] dB`，每点 10--300 帧/100 errors。GaBP 两臂统一使用
+40 iterations；supplemental per-stream LMMSE 在所有阶段同时运行，不根据结果
+选择性加入。一个入口依次执行并 checkpoint：`Lch6/kmax2/tau32` 锚点、
+`Lch8/kmax2/tau32`、`Lch8/kmax3@1100kmh/tau32`、
+`Lch8/kmax3@1100kmh/tau48`。各阶段只改变一类物理量，最后一个阶段的
+`kmax=3,lmax=7,diversity_lhs=55<64`。输出是 exploration evidence，不是
+production result；浏览器中断后使用同一 run id 续跑。
+
 正式入口使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
 每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，

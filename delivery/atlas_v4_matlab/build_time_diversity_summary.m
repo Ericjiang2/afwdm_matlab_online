@@ -1,5 +1,5 @@
 function summary = build_time_diversity_summary(runs, primary_lch, target_ber)
-%BUILD_TIME_DIVERSITY_SUMMARY Four-row int/frac x LMMSE/GaBP claim table.
+%BUILD_TIME_DIVERSITY_SUMMARY Claim table for the available primary runs.
 
 if isempty(primary_lch)
     primary = runs(strcmp({runs.spatial_pair}, 'wdm'));
@@ -8,13 +8,13 @@ else
     primary = runs([runs.Lch] == primary_lch & strcmp({runs.spatial_pair}, 'wdm'));
     missing_lch = primary_lch;
 end
-doppler_modes = {'integer', 'fractional'};
-detectors = {'block_lmmse', 'gabp'};
-rows = cell(4, 12);
+doppler_modes = unique({primary.doppler_mode}, 'stable');
+detectors = unique({primary.detector}, 'stable');
+rows = cell(numel(doppler_modes) * numel(detectors), 12);
 row = 0;
 
-for iDoppler = 1:2
-    for iDetector = 1:2
+for iDoppler = 1:numel(doppler_modes)
+    for iDetector = 1:numel(detectors)
         row = row + 1;
         match = find(strcmp({primary.doppler_mode}, doppler_modes{iDoppler}) & ...
             strcmp({primary.detector}, detectors{iDetector}), 1);

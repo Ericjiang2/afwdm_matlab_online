@@ -23,6 +23,40 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260717-01] Add a Pre-Registered Fractional-GaBP Exploration
+
+**Changed**:
+- Added `time_diversity_fractional_gabp_exploration`, using
+  `[-4 -2 0 1 2] dB`, WDM, fractional Doppler, a 10--300-frame/100-error
+  adaptive stop, and a shared 40-iteration GaBP contract.
+- The public runner executes four fixed stages in order: the comparable
+  `Lch=6, kmax=2, tau=32 us` anchor, then `Lch=8`, then `kmax=3` at about
+  1100 km/h, then `tau=48 us`. Each transition changes one physical group.
+- GaBP and per-stream LMMSE are both reported at every stage. Per-stream
+  LMMSE is supplemental and cannot be selected after observing the gap.
+- Added shared dimension auditing, explicit completion metadata, generalized
+  available-detector tables/plots, and stage-per-SNR resume coverage. Advanced
+  the immutable runner identity to `time-diversity-20260717.8`.
+
+**Why**:
+- The v6/v7 evidence makes fractional GaBP the most promising mechanism
+  anchor, but a high-SNR tail separation alone does not establish additional
+  diversity order. The fixed sequence isolates richer paths, larger Doppler
+  support, and a longer delay window without post-hoc stage or detector
+  selection.
+
+**Result**:
+- MATLAB R2025a time-diversity tests pass 44/44; an integration fixture
+  consumes all 20 compatible stage-by-SNR checkpoints through the public
+  runner and preserves a `candidate_exploration` label. Changed-file
+  `checkcode` reports zero issues.
+- A one-frame numerical wiring smoke completed all four physical stages. It
+  verifies dimensions and detector execution only; no 300-frame Online run
+  was started, no diversity-gain conclusion was promoted, and the final
+  Online result remains a human-reviewed candidate.
+
+---
+
 ### [online-20260716-01] Add a Comparable 4 dB Follow-up and Iteration Audit Range
 
 **Changed**:

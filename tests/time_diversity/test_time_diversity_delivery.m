@@ -21,6 +21,24 @@ verifyTrue(testCase, all(summary.ber_ratio_ofwdm_over_afwdm == 2));
 verifyTrue(testCase, all(~summary.noise_limited));
 end
 
+function testSummaryUsesAvailableExplorationDetectors(testCase)
+runs = synthetic_runs('wdm');
+fractional_gabp = runs(strcmp({runs.doppler_mode}, 'fractional') & ...
+    strcmp({runs.detector}, 'gabp'));
+fractional_per_stream = fractional_gabp;
+fractional_per_stream.detector = 'per_stream_lmmse';
+
+summary = build_time_diversity_summary( ...
+    [fractional_gabp, fractional_per_stream], 6, 1e-3);
+
+verifyEqual(testCase, height(summary), 2);
+verifyEqual(testCase, string(summary.doppler_mode), ...
+    ["fractional"; "fractional"]);
+verifyEqual(testCase, string(summary.detector), ...
+    ["gabp"; "per_stream_lmmse"]);
+verifyTrue(testCase, all(summary.snr_gain_db > 1));
+end
+
 function testDeliveryPlotWritesMimoMainAppendixAndTableOnly(testCase)
 runs = [synthetic_runs('wdm'), synthetic_runs('dft'), synthetic_runs('svd')];
 results = struct('runs', runs, 'N_s', 11, 'Nblk', 64, ...
@@ -29,7 +47,7 @@ results = struct('runs', runs, 'N_s', 11, 'Nblk', 64, ...
 cfg = make_delivery_config("time_diversity_smoke");
 out_dir = tempname;
 mkdir(out_dir);
-cleanup = onCleanup(@() rmdir(out_dir, 's')); %#ok<NASGU>
+cleanup = onCleanup(@() rmdir(out_dir, 's'));
 
 files = plot_time_diversity_results(results, cfg, out_dir);
 
@@ -37,6 +55,54 @@ verifyTrue(testCase, isfile(fullfile(out_dir, 'time_diversity_mimo_main.png')));
 verifyTrue(testCase, isfile(fullfile(out_dir, 'time_diversity_svd_appendix.png')));
 verifyTrue(testCase, isfile(fullfile(out_dir, 'time_diversity_summary.csv')));
 verifyFalse(testCase, any(contains(string(files), 'siso')));
+end
+
+function testExplorationPlotShowsAvailableFractionalDetectors(testCase)
+runs = synthetic_runs('wdm');
+fractional_gabp = runs(strcmp({runs.doppler_mode}, 'fractional') & ...
+    strcmp({runs.detector}, 'gabp'));
+fractional_per_stream = fractional_gabp;
+fractional_per_stream.detector = 'per_stream_lmmse';
+runs = [fractional_gabp, fractional_per_stream];
+results = struct('runs', runs, 'N_s', 11, 'Nblk', 64, ...
+    'array_shape', [4, 4], 'summary_table', ...
+    build_time_diversity_summary(runs, 6, 1e-3));
+cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
+out_dir = tempname;
+mkdir(out_dir);
+cleanup = onCleanup(@() rmdir(out_dir, 's'));
+
+files = plot_time_diversity_results(results, cfg, out_dir, 'exploration');
+
+verifyTrue(testCase, isfile(fullfile(out_dir, 'exploration_mimo_main.png')));
+verifyTrue(testCase, isfile(fullfile(out_dir, 'exploration_summary.csv')));
+verifyEqual(testCase, numel(files), 2);
+end
+
+function testExplorationCompletionRemainsCandidateAndAuditable(testCase)
+cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
+stages = build_time_diversity_exploration_stages(cfg);
+runs = synthetic_runs('wdm');
+fractional_gabp = runs(strcmp({runs.doppler_mode}, 'fractional') & ...
+    strcmp({runs.detector}, 'gabp'));
+fractional_per_stream = fractional_gabp;
+fractional_per_stream.detector = 'per_stream_lmmse';
+final_results = struct('summary_table', build_time_diversity_summary( ...
+    [fractional_gabp, fractional_per_stream], 8, 1e-3));
+
+[plan, states, outcome] = build_time_diversity_exploration_completion( ...
+    stages, final_results, stages(end).cfg);
+
+verifyEqual(testCase, plan.next_stage, 'exploration_complete');
+verifyEqual(testCase, plan.stage_order, {stages.name});
+verifyEqual(testCase, plan.diversity_lhs, 55);
+verifyEqual(testCase, states.status, 'candidate');
+verifyEqual(testCase, states.evidence_stage, 'lch8_kmax3_tau48');
+verifyEqual(testCase, outcome.status, 'candidate');
+verifyEqual(testCase, outcome.parameters.tau_max_us, 48);
+verifyEqual(testCase, outcome.parameters.detectors, ...
+    {'gabp', 'per_stream_lmmse'});
+verifyFalse(testCase, outcome.production_result_available);
 end
 
 function testSisoAnchorIsInternalAndUsesSamePhysicalParameters(testCase)
@@ -57,7 +123,7 @@ end
 function testOnlineSmokeIsCheckpointedAndResumable(testCase)
 out_root = tempname;
 mkdir(out_root);
-cleanup = onCleanup(@() rmdir(out_root, 's')); %#ok<NASGU>
+cleanup = onCleanup(@() rmdir(out_root, 's'));
 
 package = run_online_time_diversity( ...
     "time_diversity_smoke", "unit_test_run", out_root);
@@ -90,6 +156,46 @@ verifyEqual(testCase, resumed.metadata.run_id, 'unit_test_run');
 verifyError(testCase, @() run_online_time_diversity( ...
     "time_diversity_online", "unit_test_run", out_root), ...
     'run_online_time_diversity:manifestMismatch');
+end
+
+function testExplicitExplorationConsumesAllCompatibleStageCheckpoints(testCase)
+out_root = tempname;
+run_id = 'explicit_fixture_run';
+checkpoint_dir = fullfile(out_root, run_id, 'checkpoints');
+mkdir(checkpoint_dir);
+cleanup = onCleanup(@() rmdir(out_root, 's'));
+cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
+stage_plan = build_time_diversity_exploration_stages(cfg);
+
+for iStage = 1:numel(stage_plan)
+    stage = stage_plan(iStage);
+    manifest = build_time_diversity_run_manifest(stage.cfg, stage.name);
+    for snr_db = stage.cfg.time_diversity.SNR_dB_list
+        checkpoint = struct( ...
+            'stage', stage.name, ...
+            'snr_db', snr_db, ...
+            'manifest', manifest, ...
+            'results', synthetic_exploration_pack(stage.cfg, snr_db));
+        save(fullfile(checkpoint_dir, sprintf('%s_snr_%s.mat', ...
+            stage.name, fixture_snr_tag(snr_db))), 'checkpoint', '-v7');
+    end
+end
+
+package = run_online_time_diversity( ...
+    "time_diversity_fractional_gabp_exploration", run_id, out_root);
+
+verifyEqual(testCase, numel(package.escalation_stages), 3);
+verifyEqual(testCase, package.final_stage, 'lch8_kmax3_tau48');
+verifyEqual(testCase, package.final_plan.next_stage, 'exploration_complete');
+verifyEqual(testCase, package.outcome.status, 'candidate');
+verifyFalse(testCase, package.outcome.production_result_available);
+verifyEqual(testCase, package.metadata.scientific_label, ...
+    'candidate_exploration');
+verifyEqual(testCase, height(package.final_results.summary_table), 2);
+verifyEqual(testCase, string(package.final_results.summary_table.detector), ...
+    ["gabp"; "per_stream_lmmse"]);
+verifyTrue(testCase, isfile(fullfile(out_root, run_id, 'final', ...
+    'time_diversity_mimo_main.png')));
 end
 
 function testLastEscalationStageBecomesCanonicalFinal(testCase)
@@ -158,7 +264,7 @@ delivery = fullfile(root, 'delivery');
 variance = fullfile(root, 'variance', 'nested');
 mkdir(delivery);
 mkdir(variance);
-cleanup = onCleanup(@() rmdir(root, 's')); %#ok<NASGU>
+cleanup = onCleanup(@() rmdir(root, 's'));
 write_text(fullfile(delivery, 'runner.m'), 'function runner; end');
 dependency = fullfile(variance, 'dependency.m');
 write_text(dependency, 'function y=dependency; y=1; end');
@@ -209,6 +315,63 @@ for ii = 1:2
         runs(index).points = [p1, p2];
     end
 end
+end
+
+function pack = synthetic_exploration_pack(cfg, snr_db)
+detectors = cfg.time_diversity.detectors;
+base_ber = 10 ^ (-2 - 0.5 * (snr_db + 4));
+point = struct( ...
+    'ber_a', base_ber, ...
+    'ber_b', 2 * base_ber, ...
+    'ber_ratio_b_over_a', 2, ...
+    'error_count_a', 120, ...
+    'error_count_b', 240, ...
+    'bit_count', 140800, ...
+    'frame_count', 100, ...
+    'discordant_a_only', 100, ...
+    'discordant_b_only', 220, ...
+    'mcnemar_p', 0.01, ...
+    'noise_limited', false, ...
+    'claim_eligible', true, ...
+    'ber_ratio_ci', [1.5, 2.5], ...
+    'stop_reason', 'target_errors', ...
+    'average_iterations', [1; 1], ...
+    'nonconvergence_rate', [0; 0], ...
+    'final_residuals', nan(2, 0), ...
+    'average_final_residual', [NaN; NaN], ...
+    'error_table_afwdm', false(0, 0), ...
+    'error_table_ofwdm', false(0, 0));
+runs = repmat(struct( ...
+    'doppler_mode', 'fractional', ...
+    'detector', '', ...
+    'spatial_pair', 'wdm', ...
+    'Lch', cfg.time_diversity.Lch_values, ...
+    'kmax', audit_time_diversity_dimensions(cfg).kmax, ...
+    'SNR_dB', snr_db, ...
+    'points', point, ...
+    'waveform_audit', struct(), ...
+    'lch_audit', struct()), 1, numel(detectors));
+for ii = 1:numel(detectors)
+    runs(ii).detector = detectors{ii};
+end
+pack = struct( ...
+    'runs', runs, ...
+    'N_s', cfg.time_diversity.N_s, ...
+    'Nblk', cfg.Nblk, ...
+    'array_shape', cfg.array_shape, ...
+    'summary_table', build_time_diversity_summary( ...
+        runs, cfg.time_diversity.Lch_values, ...
+        cfg.time_diversity.summary_target_ber), ...
+    'lch_comparison', []);
+end
+
+function tag = fixture_snr_tag(value)
+if value < 0
+    prefix = 'm';
+else
+    prefix = 'p';
+end
+tag = [prefix strrep(sprintf('%g', abs(value)), '.', 'p')];
 end
 
 function write_text(path_value, content)
