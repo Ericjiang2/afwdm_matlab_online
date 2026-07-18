@@ -51,6 +51,45 @@ without duplicating long notes everywhere.
 
 ---
 
+### [online-20260718-03] Add a Resumable ISO SVD 15 dB Tail Supplement
+
+**Changed**:
+- Added `run_online_iso_svd_perfect_snr15_tail.m` for the single point
+  `strict_isotropic | SVD_paper | full | perfect CSI | SNR=15 dB`.
+- The default supplement is 750 frames, half of the 1500 completed AFWDM tail
+  frames. It uses 100-frame checkpoints (the final chunk is 50 frames) and
+  `frame_start_offset=100`, matching the first 750 AFWDM tail seeds.
+- Extracted the existing AFWDM chunk/resume implementation into one shared
+  runner with an immutable `RUN_CONTRACT.mat`; the old AFWDM command and
+  variable interface remain available through a thin wrapper.
+- Fixed the delivery BER loop to resolve precoder/combiner bases by scheme
+  name. Previously a singleton `schemes={'SVD_paper'}` list still selected the
+  first hard-coded AFWDM basis.
+
+**Why**:
+- The original ISO SVD point contained only one observed error at 15 dB. A
+  matched-seed, larger-bit-count supplement is needed before interpreting the
+  high-SNR AFWDM/SVD separation.
+
+**Expected result and boundary**:
+- The run reports raw frames, bits, errors, BER, and the rule-of-three upper
+  bound for a zero-error observation. It is a supplemental candidate result;
+  no ratio Claim is valid until the returned package is audited and pooled
+  against the original 100-frame point.
+
+**Validation**:
+- MATLAB R2025a: existing Online tests 46/46 plus the new tail-contract tests
+  4/4 passed; changed MATLAB files report zero Code Analyzer issues.
+- Main-repository MATLAB-Online Python regressions pass 18/18.
+- A real one-frame full-load SVD tail smoke produced `0/7680`, persisted
+  `results.schemes={'SVD_paper'}`, resumed by skipping the completed chunk,
+  and rejected a changed contract with `manifestMismatch`.
+- A separate same-seed `N_s=8` regression matched singleton SVD exactly to the
+  SVD row of the three-scheme run. The requested 750-frame Online supplement
+  was not launched locally.
+
+---
+
 ### [online-20260717-02] Widen the Fractional-GaBP Grid and Tail Budget
 
 **Changed**:

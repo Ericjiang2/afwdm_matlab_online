@@ -144,11 +144,23 @@ for iScenario = 1:nScenario
                     G_hat = build_G_paper_eq31(H_hat, 'sum_taps');
                     [W_s_svd, W_r_svd] = svd_precoder_from_G(G_hat, N_s, N_s);
 
-                    Us_list = {Us_afwdm, W_s_dft, W_s_svd};
-                    Ur_list = {Ur_afwdm, W_r_dft, W_r_svd};
-
                     for k = 1:nScheme
-                        cfg_k = make_delivery_scheme_cfg(cfg_base, Us_list{k}, Ur_list{k}, N_s, cfg_run);
+                        switch cfg_run.schemes{k}
+                            case 'AFWDM'
+                                Us_scheme = Us_afwdm;
+                                Ur_scheme = Ur_afwdm;
+                            case 'DFT_precoded'
+                                Us_scheme = W_s_dft;
+                                Ur_scheme = W_r_dft;
+                            case 'SVD_paper'
+                                Us_scheme = W_s_svd;
+                                Ur_scheme = W_r_svd;
+                            otherwise
+                                error('main_atlas_v4_delivery:scheme', ...
+                                    'Unknown BER scheme "%s".', cfg_run.schemes{k});
+                        end
+                        cfg_k = make_delivery_scheme_cfg(cfg_base, ...
+                            Us_scheme, Ur_scheme, N_s, cfg_run);
 
                         % 2.8 Block equivalent channel
                         % Hr 是真实传播信道, Hd 是接收机估计信道.
@@ -234,7 +246,7 @@ results.time_diversity = time_diversity_results;
 metadata = struct();
 metadata.mode = cfg_run.mode;
 metadata.generated_by = 'delivery/atlas_v4_matlab/main_atlas_v4_delivery.m';
-metadata.timestamp = datestr(now, 'yyyy-mm-dd HH:MM:SS');
+metadata.timestamp = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
 metadata.snr_definition = cfg_run.snr_definition;
 metadata.csi_error_mode = cfg_run.csi_error_mode;
 metadata.channel_norm_mode = cfg_run.channel_norm_mode;
@@ -247,7 +259,7 @@ if ~isempty(cfg_run.quick_stream_cap)
 end
 
 out_mat = fullfile(cfg_run.output_dir, sprintf('atlas_v4_delivery_%s_%s.mat', ...
-    cfg_run.mode, datestr(now, 'yyyymmdd_HHMMSS')));
+    cfg_run.mode, char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'))));
 save(out_mat, 'results', 'metadata', 'cfg_run', '-v7');
 
 plot_files = {};

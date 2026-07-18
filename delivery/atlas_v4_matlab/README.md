@@ -29,6 +29,17 @@ run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 run('delivery/atlas_v4_matlab/run_online_fullstream_waveform_screen.m')
 ```
 
+strict-ISO、perfect-CSI、full、15 dB 的 SVD_paper 单点补跑入口：
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_iso_svd_perfect_snr15_tail.m')
+```
+
+默认补跑 750 帧，是已完成 AFWDM 1500 个 tail 帧的一半；按 100 帧分块，
+最后一块 50 帧。`frame_start_offset=100` 使其与 AFWDM tail 的前 750 帧共享
+frame seeds。输出保留逐块和汇总的帧数、bit 数、错误数及 BER；零错误按
+rule-of-three 上界解释。重复同一命令会在 `RUN_CONTRACT.mat` 一致时续跑。
+
 AFWDM vs OFWDM 时间分集正式入口:
 
 ```matlab
