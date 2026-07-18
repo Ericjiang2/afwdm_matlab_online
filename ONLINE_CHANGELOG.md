@@ -23,6 +23,34 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260718-02] Add the Lch6/tau48 Single-Stage Follow-up
+
+**Changed**:
+- Added `time_diversity_lch6_tau48_followup` under the existing public runner.
+  It fixes `Lch=6`, `v_max=860 km/h` (`kmax=2`), and changes only
+  `tau_max:32->48 us` relative to the v9 Lch6 anchor.
+- Kept the v9 `[-8 -6 -4 -2 0 1 2 4] dB` grid, paired seeds, fractional WDM,
+  100-error stop, and common 40-iteration GaBP contract. The maximum is raised
+  from 500 to 1000 frames; the ineffective per-stream LMMSE comparator is not
+  run in this focused follow-up.
+- Added `run_time_diversity_lch6_tau48_followup()` with fixed run id
+  `time_diversity_lch6_tau48_followup_v10_20260718`, and advanced the immutable
+  runner identity to `time-diversity-20260718.10`.
+
+**Why**:
+- The returned v9 data suggest a larger AFWDM/OFWDM separation for the Lch6
+  anchor than for Lch8, little incremental change from kmax2 to kmax3, and a
+  potentially larger delay-support effect. This run isolates delay support at
+  Lch6 without mixing path count or Doppler changes.
+
+**Expected result and boundary**:
+- The derived audit is `kmax=2,lmax=7,diversity_lhs=39<64`. The 1000-frame cap
+  improves high-SNR observability, but points below the 100-error target remain
+  noise-limited and cannot establish a diversity-order change by themselves.
+  No 1000-frame experiment is run during delivery validation.
+
+---
+
 ### [online-20260717-02] Widen the Fractional-GaBP Grid and Tail Budget
 
 **Changed**:

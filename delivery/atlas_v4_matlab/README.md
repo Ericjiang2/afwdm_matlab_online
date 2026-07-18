@@ -96,6 +96,23 @@ package = run_online_time_diversity( ...
 production result；浏览器中断后使用同一 v9 run id 续跑。v8 的 5 点/300 帧
 checkpoint 与结果只保留作历史证据，不得混入本次 v9 重跑。
 
+Lch6、tau=48 us 独立 follow-up 入口：
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+package = run_time_diversity_lch6_tau48_followup();
+```
+
+该入口固定使用 run id `time_diversity_lch6_tau48_followup_v10_20260718`，
+重复执行会续跑同一批兼容 checkpoint。它只跑一个
+`Lch=6, kmax=2@860km/h, tau_max=48 us` 阶段，以原 v9
+`Lch6/kmax2/tau32` 为单变量对照；SNR 仍为
+`[-8 -6 -4 -2 0 1 2 4] dB`，10--1000 帧/100 errors，只保留 fractional
+WDM GaBP，双臂共同 40 iterations。导出的维度审计应为
+`kmax=2,lmax=7,diversity_lhs=39<64`。1000 是兜底上限；已达到 100 errors
+的低 SNR 点仍会提前停止。该输出是 candidate follow-up，不是 production
+result，也不得复用 v9 checkpoint。
+
 正式入口使用 `time_diversity_online` 配置，按“阶段 × SNR”保存 checkpoint；浏览器
 中断后重跑同一命令会复用 `_ACTIVE_TIME_DIVERSITY_RUN_ID.txt` 并跳过已完成点。
 每个 run/stage 都保存配置、代码、seed 与场景指纹；指纹不一致时会明确失败，

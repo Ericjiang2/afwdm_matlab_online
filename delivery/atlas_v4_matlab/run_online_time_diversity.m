@@ -16,11 +16,13 @@ profile = lower(string(profile));
 if ~ismember(profile, ["time_diversity_online", "time_diversity_pilot", ...
         "time_diversity_low_snr_pilot", "time_diversity_4db_followup", ...
         "time_diversity_fractional_gabp_exploration", ...
+        "time_diversity_lch6_tau48_followup", ...
         "time_diversity_smoke"])
     error('run_online_time_diversity:profile', ...
         ['Profile must be time_diversity_online, time_diversity_pilot, ' ...
          'time_diversity_low_snr_pilot, time_diversity_4db_followup, ' ...
          'time_diversity_fractional_gabp_exploration, ' ...
+         'time_diversity_lch6_tau48_followup, ' ...
          'or time_diversity_smoke.']);
 end
 
@@ -78,7 +80,11 @@ current_results = baseline;
 current_stage = 'lch6';
 mode_states = initialize_time_diversity_mode_states( ...
     cfg0.time_diversity.doppler_modes);
-stages = cell(1, 3);
+if is_explicit_exploration
+    stages = cell(1, max(0, numel(stage_plan) - 1));
+else
+    stages = cell(1, 3);
+end
 stage_count = 0;
 
 if is_explicit_exploration
@@ -119,6 +125,9 @@ stages = stages(1:stage_count);
 
 siso_anchor = run_time_diversity_siso_anchor(cfg0);
 [final_results, final_stage] = select_time_diversity_final_results(baseline, stages);
+if is_explicit_exploration
+    final_stage = stage_plan(end).name;
+end
 if ~is_explicit_exploration
     outcome = build_time_diversity_outcome(plan, final_stage, current_cfg, mode_states);
 end

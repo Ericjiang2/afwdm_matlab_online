@@ -84,7 +84,7 @@ cfg = make_delivery_config("time_diversity_low_snr_pilot");
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.9');
+    'time-diversity-20260718.10');
 verifyEqual(testCase, manifest.profile, 'time_diversity_low_snr_pilot');
 end
 
@@ -108,7 +108,7 @@ verifyFalse(testCase, cfg.time_diversity.enable_escalation);
 
 manifest = build_time_diversity_run_manifest(cfg, 'baseline');
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.9');
+    'time-diversity-20260718.10');
 verifyEqual(testCase, manifest.profile, 'time_diversity_4db_followup');
 end
 
@@ -142,7 +142,7 @@ verifyEqual(testCase, [cfg.time_diversity.explicit_stages.tau_max_us], ...
 
 manifest = build_time_diversity_run_manifest(cfg, 'run');
 verifyEqual(testCase, manifest.runner_version, ...
-    'time-diversity-20260717.9');
+    'time-diversity-20260718.10');
 verifyEqual(testCase, manifest.profile, ...
     'time_diversity_fractional_gabp_exploration');
 end
@@ -165,6 +165,40 @@ verifyEqual(testCase, [audits.diversity_lhs], [29, 29, 41, 55]);
 verifyTrue(testCase, all([audits.diversity_condition_passed]));
 verifyEqual(testCase, stages(4).cfg.time_diversity.gabp.max_iterations, 40);
 verifyEqual(testCase, stages(4).cfg.time_diversity.max_frames, 500);
+end
+
+function testLch6Tau48FollowupIsAnIsolatedSingleStage(testCase)
+cfg = make_delivery_config("time_diversity_lch6_tau48_followup");
+
+verifyEqual(testCase, cfg.v_max_kmh, 860);
+verifyEqual(testCase, cfg.tau_max_us, 48);
+verifyEqual(testCase, cfg.time_diversity.SNR_dB_list, ...
+    [-8, -6, -4, -2, 0, 1, 2, 4]);
+verifyEqual(testCase, cfg.time_diversity.Lch_values, 6);
+verifyEqual(testCase, cfg.time_diversity.spatial_pairs, {'wdm'});
+verifyEqual(testCase, cfg.time_diversity.doppler_modes, {'fractional'});
+verifyEqual(testCase, cfg.time_diversity.detectors, {'gabp'});
+verifyEqual(testCase, cfg.time_diversity.min_frames, 10);
+verifyEqual(testCase, cfg.time_diversity.max_frames, 1000);
+verifyEqual(testCase, cfg.time_diversity.target_errors, 100);
+verifyEqual(testCase, cfg.time_diversity.gabp.max_iterations, 40);
+verifyFalse(testCase, cfg.time_diversity.enable_escalation);
+
+stages = build_time_diversity_exploration_stages(cfg);
+verifyEqual(testCase, numel(stages), 1);
+verifyEqual(testCase, stages.name, 'lch6_kmax2_tau48');
+verifyEqual(testCase, stages.single_variable_change, ...
+    'tau_max_us:32->48 relative to v9 anchor');
+verifyEqual(testCase, stages.audit.kmax, 2);
+verifyEqual(testCase, stages.audit.lmax, 7);
+verifyEqual(testCase, stages.audit.diversity_lhs, 39);
+verifyTrue(testCase, stages.audit.diversity_condition_passed);
+
+manifest = build_time_diversity_run_manifest(cfg, stages.name);
+verifyEqual(testCase, manifest.runner_version, ...
+    'time-diversity-20260718.10');
+verifyEqual(testCase, manifest.profile, ...
+    'time_diversity_lch6_tau48_followup');
 end
 
 function testWaveformPairSharesSpatialBasisAndOnlyZerosOfdmChirps(testCase)

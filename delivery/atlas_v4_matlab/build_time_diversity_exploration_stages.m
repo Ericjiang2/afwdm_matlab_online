@@ -1,10 +1,11 @@
 function stages = build_time_diversity_exploration_stages(cfg_run)
 %BUILD_TIME_DIVERSITY_EXPLORATION_STAGES Materialize an explicit stage plan.
 
-expected_mode = 'time_diversity_fractional_gabp_exploration';
-if ~strcmp(cfg_run.mode, expected_mode)
+expected_modes = {'time_diversity_fractional_gabp_exploration', ...
+    'time_diversity_lch6_tau48_followup'};
+if ~ismember(cfg_run.mode, expected_modes)
     error('build_time_diversity_exploration_stages:profile', ...
-        'Explicit exploration requires profile "%s".', expected_mode);
+        'Profile "%s" does not define an explicit exploration.', cfg_run.mode);
 end
 if ~isfield(cfg_run.time_diversity, 'explicit_stages') || ...
         isempty(cfg_run.time_diversity.explicit_stages)
@@ -25,9 +26,12 @@ for ii = 1:numel(specs)
     audit = audit_time_diversity_dimensions(stage_cfg);
 
     if ii == 1
-        require_equal(specs(ii).Lch, 6, 'anchor Lch');
-        require_equal(specs(ii).v_max_kmh, 860, 'anchor velocity');
-        require_equal(specs(ii).tau_max_us, 32, 'anchor delay');
+        require_equal(specs(ii).Lch, ...
+            cfg_run.time_diversity.Lch_values, 'profile anchor Lch');
+        require_equal(specs(ii).v_max_kmh, ...
+            cfg_run.v_max_kmh, 'profile anchor velocity');
+        require_equal(specs(ii).tau_max_us, ...
+            cfg_run.tau_max_us, 'profile anchor delay');
     else
         assert_single_change(previous, specs(ii), ii);
     end

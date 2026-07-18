@@ -198,6 +198,47 @@ verifyTrue(testCase, isfile(fullfile(out_root, run_id, 'final', ...
     'time_diversity_mimo_main.png')));
 end
 
+function testLch6Tau48WrapperConsumesOneStageCheckpoints(testCase)
+out_root = tempname;
+run_id = 'time_diversity_lch6_tau48_followup_v10_20260718';
+checkpoint_dir = fullfile(out_root, run_id, 'checkpoints');
+mkdir(checkpoint_dir);
+cleanup = onCleanup(@() rmdir(out_root, 's'));
+cfg = make_delivery_config("time_diversity_lch6_tau48_followup");
+stage_plan = build_time_diversity_exploration_stages(cfg);
+stage = stage_plan(1);
+manifest = build_time_diversity_run_manifest(stage.cfg, stage.name);
+
+for snr_db = stage.cfg.time_diversity.SNR_dB_list
+    checkpoint = struct( ...
+        'stage', stage.name, ...
+        'snr_db', snr_db, ...
+        'manifest', manifest, ...
+        'results', synthetic_exploration_pack(stage.cfg, snr_db));
+    save(fullfile(checkpoint_dir, sprintf('%s_snr_%s.mat', ...
+        stage.name, fixture_snr_tag(snr_db))), 'checkpoint', '-v7');
+end
+
+package = run_time_diversity_lch6_tau48_followup(out_root);
+
+verifyEmpty(testCase, package.escalation_stages);
+verifyEqual(testCase, package.final_stage, 'lch6_kmax2_tau48');
+verifyEqual(testCase, package.final_plan.next_stage, 'exploration_complete');
+verifyEqual(testCase, package.outcome.status, 'candidate');
+verifyEqual(testCase, package.outcome.parameters.kmax, 2);
+verifyEqual(testCase, package.outcome.parameters.lmax, 7);
+verifyEqual(testCase, package.outcome.parameters.tau_max_us, 48);
+verifyEqual(testCase, package.metadata.profile, ...
+    'time_diversity_lch6_tau48_followup');
+verifyEqual(testCase, package.metadata.scientific_label, ...
+    'candidate_exploration');
+verifyEqual(testCase, height(package.final_results.summary_table), 1);
+verifyEqual(testCase, string(package.final_results.summary_table.detector), ...
+    "gabp");
+verifyTrue(testCase, isfile(fullfile(out_root, run_id, 'final', ...
+    'time_diversity_final.mat')));
+end
+
 function testLastEscalationStageBecomesCanonicalFinal(testCase)
 baseline_runs = [synthetic_runs('wdm'), synthetic_runs('dft'), ...
     synthetic_runs('svd')];
