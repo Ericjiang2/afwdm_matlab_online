@@ -1,5 +1,5 @@
 function summary = run_iso_perfect_snr15_tail(cfg)
-%RUN_ISO_PERFECT_SNR15_TAIL Resumable single-scheme ISO 15 dB tail runner.
+%RUN_ISO_PERFECT_SNR15_TAIL Resumable single-point strict-ISO tail runner.
 
 validate_config(cfg);
 
@@ -36,7 +36,7 @@ write_run_info(run_root, cfg, run_id);
 
 n_chunks = ceil(cfg.total_frames / cfg.chunk_frames);
 fprintf('\n============================================================\n');
-fprintf(' ISO %s perfect-CSI SNR=15 tail run\n', cfg.scheme);
+fprintf(' ISO %s perfect-CSI SNR=%g dB tail run\n', cfg.scheme, cfg.SNR_dB);
 fprintf(' run_id: %s\n', run_id);
 fprintf(' total_frames=%d, chunk_frames=%d, frame_start_offset=%d\n', ...
     cfg.total_frames, cfg.chunk_frames, cfg.frame_start_offset);
@@ -66,7 +66,8 @@ for iChunk = 1:n_chunks
     ensure_dir(chunk_dir);
     t_chunk = tic;
 
-    run_single_point_chunk(this_dir, chunk_dir, frames_this, frame_offset, cfg.scheme);
+    run_single_point_chunk(this_dir, chunk_dir, frames_this, frame_offset, ...
+        cfg.scheme, cfg.SNR_dB);
 
     hits = dir(mat_pattern);
     if isempty(hits)
@@ -111,10 +112,11 @@ end
 validateattributes(cfg.total_frames, {'numeric'}, {'scalar', 'integer', 'positive'});
 validateattributes(cfg.chunk_frames, {'numeric'}, {'scalar', 'integer', 'positive'});
 validateattributes(cfg.frame_start_offset, {'numeric'}, {'scalar', 'integer', 'nonnegative'});
-if cfg.SNR_dB ~= 15 || ~strcmp(cfg.scenario, 'strict_isotropic') || ...
+validateattributes(cfg.SNR_dB, {'numeric'}, {'scalar', 'real', 'finite'});
+if ~strcmp(cfg.scenario, 'strict_isotropic') || ...
         ~strcmp(cfg.strategy, 'full') || ~strcmp(cfg.csi_label, 'perfect CSI')
     error('run_iso_perfect_snr15_tail:target', ...
-        'This runner is frozen to strict-isotropic/full/perfect-CSI/SNR=15 dB.');
+        'This runner is frozen to strict-isotropic/full/perfect-CSI.');
 end
 end
 
@@ -190,20 +192,21 @@ chunk_id = sprintf('chunk_%04d_frames_%06d_%06d', ...
     iChunk, frame_offset + 1, frame_offset + frames_this);
 end
 
-function run_single_point_chunk(this_dir, output_dir, frames_this, frame_offset, scheme)
+function run_single_point_chunk(this_dir, output_dir, frames_this, frame_offset, scheme, SNR_dB)
 mode = "paperfig_iso"; %#ok<NASGU>
-cfg_override = make_single_point_override(output_dir, frames_this, frame_offset, scheme); %#ok<NASGU>
+cfg_override = make_single_point_override(output_dir, frames_this, ...
+    frame_offset, scheme, SNR_dB); %#ok<NASGU>
 run_capacity = false; %#ok<NASGU>
 run(fullfile(this_dir, 'main_atlas_v4_delivery.m'));
 end
 
-function cfg_override = make_single_point_override(output_dir, frames_this, frame_offset, scheme)
+function cfg_override = make_single_point_override(output_dir, frames_this, frame_offset, scheme, SNR_dB)
 cfg_override = struct();
 cfg_override.output_dir = output_dir;
 cfg_override.skip_plots = true;
 cfg_override.numFrames_BER = frames_this;
 cfg_override.frame_start_offset = frame_offset;
-cfg_override.SNR_dB_list = 15;
+cfg_override.SNR_dB_list = SNR_dB;
 cfg_override.schemes = {scheme};
 cfg_override.strategies = {'full'};
 cfg_override.kappa_list = 0;

@@ -23,6 +23,41 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260718-04] Add an ISO SVD 20 dB Error-Floor Diagnostic
+
+**Changed**:
+- Added `run_online_iso_svd_perfect_snr20_tail.m` for the single point
+  `strict_isotropic | SVD_paper | full | perfect CSI | SNR=20 dB`.
+- The default is 2250 frames, three times the completed 750-frame 15 dB SVD
+  supplement. It uses 100-frame checkpoints (the final chunk is 50 frames)
+  and keeps `frame_start_offset=100`, so the first 750 frame seeds match the
+  15 dB supplement.
+- Generalized the shared strict-ISO tail runner to pass the frozen SNR from
+  `RUN_CONTRACT.mat` into the delivery loop. The 20 dB run has a separate
+  runner identity and active file, so it cannot adopt 15 dB checkpoints.
+
+**Why**:
+- The enlarged 15 dB result still descends relative to 10 dB but has a
+  shallow high-SNR slope. One higher-SNR point with three times the frame
+  budget is a focused diagnostic for continued waterfall versus a possible
+  error floor.
+
+**Expected result and boundary**:
+- The package reports raw frames, bits, errors and BER. A zero-error result is
+  interpreted with the rule-of-three upper bound; one 20 dB point alone does
+  not prove or disprove an asymptotic floor. The 2250-frame run is not started
+  during delivery validation.
+
+**Validation**:
+- MATLAB R2025a: tail-contract tests 5/5 passed and the three changed MATLAB
+  files report zero Code Analyzer issues.
+- A real one-frame full-load smoke persisted
+  `strict_isotropic | SVD_paper | full | perfect CSI | SNR=20 dB` and produced
+  `0/7680`; this validates wiring only and is not a BER result.
+- Main-repository focused MATLAB-Online Python regressions pass 9/9.
+
+---
+
 ### [online-20260718-02] Add the Lch6/tau48 Single-Stage Follow-up
 
 **Changed**:

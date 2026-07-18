@@ -40,6 +40,18 @@ run('delivery/atlas_v4_matlab/run_online_iso_svd_perfect_snr15_tail.m')
 frame seeds。输出保留逐块和汇总的帧数、bit 数、错误数及 BER；零错误按
 rule-of-three 上界解释。重复同一命令会在 `RUN_CONTRACT.mat` 一致时续跑。
 
+同一口径的 SVD_paper 20 dB error-floor 诊断入口：
+
+```matlab
+run('delivery/atlas_v4_matlab/run_online_iso_svd_perfect_snr20_tail.m')
+```
+
+默认 2250 帧，是上述 15 dB SVD 补跑 750 帧的 3 倍；仍按 100 帧分块，
+最后一块 50 帧。它使用独立 run id、active file 和 `RUN_CONTRACT.mat`，不会
+误接 15 dB checkpoint；`frame_start_offset=100` 使前 750 帧与 15 dB 补跑
+共享 frame seeds，便于比较同一批信道实现。该单点只用于检查瀑布区是否继续
+下降；是否形成 error floor 仍须结合 raw error/bit 数和相邻 SNR 点判断。
+
 AFWDM vs OFWDM 时间分集正式入口:
 
 ```matlab

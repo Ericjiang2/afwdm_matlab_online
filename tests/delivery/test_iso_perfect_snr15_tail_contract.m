@@ -32,6 +32,21 @@ verifyEqual(testCase, cfg.chunk_frames, 100);
 verifyEqual(testCase, cfg.frame_start_offset, 100);
 end
 
+function testSvdSnr20UsesThreeTimesSnr15BudgetAndSeparateResumeIdentity(testCase)
+cfg = make_iso_svd_snr20_tail_config();
+
+verifyEqual(testCase, cfg.scheme, 'SVD_paper');
+verifyEqual(testCase, cfg.total_frames, 2250);
+verifyEqual(testCase, cfg.chunk_frames, 100);
+verifyEqual(testCase, cfg.frame_start_offset, 100);
+verifyEqual(testCase, cfg.SNR_dB, 20);
+verifyEqual(testCase, cfg.runner_version, 'iso-perfect-svd-snr20-tail-v1');
+verifyEqual(testCase, cfg.active_file, '_ACTIVE_ISO_SVD_SNR20_TAIL_ID.txt');
+verifyEqual(testCase, cfg.scenario, 'strict_isotropic');
+verifyEqual(testCase, cfg.strategy, 'full');
+verifyEqual(testCase, cfg.csi_label, 'perfect CSI');
+end
+
 function testUnknownSchemeFailsExplicitly(testCase)
 verifyError(testCase, ...
     @() make_iso_perfect_snr15_tail_config('unknown'), ...
