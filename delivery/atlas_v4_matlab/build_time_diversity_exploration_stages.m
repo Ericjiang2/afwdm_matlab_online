@@ -2,7 +2,8 @@ function stages = build_time_diversity_exploration_stages(cfg_run)
 %BUILD_TIME_DIVERSITY_EXPLORATION_STAGES Materialize an explicit stage plan.
 
 expected_modes = {'time_diversity_fractional_gabp_exploration', ...
-    'time_diversity_lch6_tau48_followup'};
+    'time_diversity_lch6_tau48_followup', ...
+    'time_diversity_tau48_sixline'};
 if ~ismember(cfg_run.mode, expected_modes)
     error('build_time_diversity_exploration_stages:profile', ...
         'Profile "%s" does not define an explicit exploration.', cfg_run.mode);

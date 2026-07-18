@@ -23,6 +23,45 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260718-05] Add the Tau48 Precoding Six-Line Run
+
+**Changed**:
+- Added `time_diversity_tau48_sixline` under the existing public time-diversity
+  runner and a fixed wrapper `run_time_diversity_tau48_sixline()`.
+- Inherited the audited v10 physical and detector contract: `Lch=6`,
+  `v_max=860 km/h` (`kmax=2`), `tau_max=48 us`, fractional Doppler, full
+  `N_s=11`, common 40-iteration GaBP, 10--1000 frames/SNR, and a 100-error
+  adaptive stop.
+- Removed only the `1 dB` point, giving `[-8 -6 -4 -2 0 2 4] dB`, and expanded
+  the spatial pairs to `wdm/dft/svd`. The main output figure now contains all
+  six AFDM/OFDM curves for this profile; older profile plotting is unchanged.
+- Assigned runner identity `time-diversity-20260718.11` and fixed run id
+  `time_diversity_tau48_sixline_v11_20260718` so v10 checkpoints cannot be
+  reused.
+
+**Why**:
+- The accepted v10 WDM result needs its missing DFT- and SVD-precoded waveform
+  comparisons under the same latest delay-support and GaBP settings. Keeping
+  one profile and one paired simulation kernel prevents a second source of
+  truth for channel, bits/noise, detector, and stopping behavior.
+
+**Expected result and boundary**:
+- The final main plot contains AFWDM/OFWDM, AFDM-DFT/OFDM-DFT, and
+  AFDM-SVD/OFDM-SVD. This is a candidate extension; points below the 100-error
+  target remain noise-limited, and the Online Monte Carlo must be reviewed
+  before any new Claim or Atlas promotion.
+
+**Validation**:
+- TDD first failed with `make_delivery_config:unknownMode`; after implementation
+  the three new focused contracts pass and the full time-diversity suite passes
+  49/49 in MATLAB R2025a.
+- Code Analyzer reports zero issues across the eight changed/new MATLAB files.
+- A bounded `0 dB x 1 frame` numerical smoke completed all three spatial pairs,
+  observing paired errors `wdm=3/2`, `dft=1/2`, and `svd=0/1`. This validates
+  wiring only; the 1000-frame Online run was not started locally.
+
+---
+
 ### [online-20260718-04] Add an ISO SVD 20 dB Error-Floor Diagnostic
 
 **Changed**:

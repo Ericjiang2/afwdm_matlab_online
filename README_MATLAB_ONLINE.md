@@ -34,6 +34,27 @@ python3 tools/import_online_results.py --run-id <online_run_id> --zip /path/to/d
 The `results_seed/latest_v4/` folder contains only the current v4 reference
 mat files, not the full historical `results/` tree.
 
+## Tau48 Six-Line Time-Diversity Run
+
+From the cloned repository root in MATLAB Online, run:
+
+```matlab
+addpath(fullfile(pwd, 'delivery', 'atlas_v4_matlab'));
+package = run_time_diversity_tau48_sixline();
+```
+
+This fixed v11 entry uses `Lch=6`, `v_max=860 km/h` (`kmax=2`),
+`tau_max=48 us`, fractional Doppler, QPSK, full `N_s=11`, common 40-iteration
+GaBP, and the SNR grid `[-8 -6 -4 -2 0 2 4] dB`. At each point it runs the
+WDM, DFT, and SVD spatial pairs, producing six AFDM/OFDM BER curves under
+shared channel, bits/noise, detector, and adaptive stopping settings.
+
+The fixed run id is `time_diversity_tau48_sixline_v11_20260718`. Rerun the
+same command after a disconnect to resume compatible per-SNR checkpoints.
+Outputs are written under
+`delivery/atlas_v4_matlab/outputs/online_runs/<run_id>/`; do not copy v10
+checkpoints into this run.
+
 ## MATLAB Online Parallel Note
 
 MATLAB Online default sessions do not support the local/processes pools used by

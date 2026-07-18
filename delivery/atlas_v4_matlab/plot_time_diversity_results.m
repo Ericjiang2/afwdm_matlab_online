@@ -17,11 +17,22 @@ main_file = fullfile(output_dir, [file_prefix '_mimo_main.png']);
 appendix_file = fullfile(output_dir, [file_prefix '_svd_appendix.png']);
 table_file = fullfile(output_dir, [file_prefix '_summary.csv']);
 
-plot_pair_grid(results.runs, {'wdm', 'dft'}, main_file, ...
-    sprintf('AFWDM vs OFWDM MIMO BER (N_s=%d, Lch=%s)', results.N_s, lch_label));
+is_tau48_sixline = isfield(cfg_run, 'mode') && ...
+    strcmp(cfg_run.mode, 'time_diversity_tau48_sixline');
+if is_tau48_sixline
+    main_pairs = {'wdm', 'dft', 'svd'};
+    title_text = sprintf( ...
+        'AFWDM/OFWDM precoding comparison (N_s=%d, Lch=%s, tau=48 us)', ...
+        results.N_s, lch_label);
+else
+    main_pairs = {'wdm', 'dft'};
+    title_text = sprintf( ...
+        'AFWDM vs OFWDM MIMO BER (N_s=%d, Lch=%s)', results.N_s, lch_label);
+end
+plot_pair_grid(results.runs, main_pairs, main_file, title_text);
 writetable(results.summary_table, table_file);
 files = {main_file, table_file};
-if any(strcmp({results.runs.spatial_pair}, 'svd'))
+if ~is_tau48_sixline && any(strcmp({results.runs.spatial_pair}, 'svd'))
     svd_runs = results.runs(strcmp({results.runs.spatial_pair}, 'svd'));
     svd_lch = max([svd_runs.Lch]);
     plot_pair_grid(results.runs, {'svd'}, appendix_file, ...

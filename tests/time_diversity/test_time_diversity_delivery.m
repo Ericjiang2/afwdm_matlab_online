@@ -79,6 +79,26 @@ verifyTrue(testCase, isfile(fullfile(out_dir, 'exploration_summary.csv')));
 verifyEqual(testCase, numel(files), 2);
 end
 
+function testTau48SixLinePlotKeepsAllPairsInOneFigure(testCase)
+runs = [synthetic_runs('wdm'), synthetic_runs('dft'), synthetic_runs('svd')];
+runs = runs(strcmp({runs.doppler_mode}, 'fractional') & ...
+    strcmp({runs.detector}, 'gabp'));
+results = struct('runs', runs, 'N_s', 11, 'Nblk', 64, ...
+    'array_shape', [4, 4], 'summary_table', ...
+    build_time_diversity_summary(runs, 6, 1e-3));
+cfg = make_delivery_config("time_diversity_tau48_sixline");
+out_dir = tempname;
+mkdir(out_dir);
+cleanup = onCleanup(@() rmdir(out_dir, 's'));
+
+files = plot_time_diversity_results(results, cfg, out_dir, 'sixline');
+
+verifyTrue(testCase, isfile(fullfile(out_dir, 'sixline_mimo_main.png')));
+verifyTrue(testCase, isfile(fullfile(out_dir, 'sixline_summary.csv')));
+verifyFalse(testCase, isfile(fullfile(out_dir, 'sixline_svd_appendix.png')));
+verifyEqual(testCase, numel(files), 2);
+end
+
 function testExplorationCompletionRemainsCandidateAndAuditable(testCase)
 cfg = make_delivery_config("time_diversity_fractional_gabp_exploration");
 stages = build_time_diversity_exploration_stages(cfg);
@@ -239,6 +259,43 @@ verifyTrue(testCase, isfile(fullfile(out_root, run_id, 'final', ...
     'time_diversity_final.mat')));
 end
 
+function testTau48SixLineWrapperConsumesSevenPairedCheckpoints(testCase)
+out_root = tempname;
+run_id = 'time_diversity_tau48_sixline_v11_20260718';
+checkpoint_dir = fullfile(out_root, run_id, 'checkpoints');
+mkdir(checkpoint_dir);
+cleanup = onCleanup(@() rmdir(out_root, 's'));
+cfg = make_delivery_config("time_diversity_tau48_sixline");
+stage_plan = build_time_diversity_exploration_stages(cfg);
+stage = stage_plan(1);
+manifest = build_time_diversity_run_manifest(stage.cfg, stage.name);
+
+for snr_db = stage.cfg.time_diversity.SNR_dB_list
+    checkpoint = struct( ...
+        'stage', stage.name, ...
+        'snr_db', snr_db, ...
+        'manifest', manifest, ...
+        'results', synthetic_exploration_pack(stage.cfg, snr_db));
+    save(fullfile(checkpoint_dir, sprintf('%s_snr_%s.mat', ...
+        stage.name, fixture_snr_tag(snr_db))), 'checkpoint', '-v7');
+end
+
+package = run_time_diversity_tau48_sixline(out_root);
+
+verifyEmpty(testCase, package.escalation_stages);
+verifyEqual(testCase, package.final_stage, 'lch6_kmax2_tau48_sixline');
+verifyEqual(testCase, package.metadata.profile, ...
+    'time_diversity_tau48_sixline');
+verifyEqual(testCase, package.metadata.run_id, run_id);
+verifyEqual(testCase, numel(package.final_results.runs), 3);
+verifyEqual(testCase, {package.final_results.runs.spatial_pair}, ...
+    {'wdm', 'dft', 'svd'});
+verifyTrue(testCase, isfile(fullfile(out_root, run_id, 'final', ...
+    'time_diversity_mimo_main.png')));
+verifyFalse(testCase, isfile(fullfile(out_root, run_id, 'final', ...
+    'time_diversity_svd_appendix.png')));
+end
+
 function testLastEscalationStageBecomesCanonicalFinal(testCase)
 baseline_runs = [synthetic_runs('wdm'), synthetic_runs('dft'), ...
     synthetic_runs('svd')];
@@ -360,6 +417,7 @@ end
 
 function pack = synthetic_exploration_pack(cfg, snr_db)
 detectors = cfg.time_diversity.detectors;
+spatial_pairs = cfg.time_diversity.spatial_pairs;
 base_ber = 10 ^ (-2 - 0.5 * (snr_db + 4));
 point = struct( ...
     'ber_a', base_ber, ...
@@ -391,9 +449,14 @@ runs = repmat(struct( ...
     'SNR_dB', snr_db, ...
     'points', point, ...
     'waveform_audit', struct(), ...
-    'lch_audit', struct()), 1, numel(detectors));
-for ii = 1:numel(detectors)
-    runs(ii).detector = detectors{ii};
+    'lch_audit', struct()), 1, numel(detectors) * numel(spatial_pairs));
+run_index = 0;
+for iSpatial = 1:numel(spatial_pairs)
+    for iDetector = 1:numel(detectors)
+        run_index = run_index + 1;
+        runs(run_index).detector = detectors{iDetector};
+        runs(run_index).spatial_pair = spatial_pairs{iSpatial};
+    end
 end
 pack = struct( ...
     'runs', runs, ...
