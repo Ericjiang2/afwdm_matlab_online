@@ -109,6 +109,14 @@ Wbb = [];
 if isfield(cfg, 'Wbb_wdm')
     Wbb = cfg.Wbb_wdm;
 end
+if isempty(Fbb) && isempty(Wbb) && cfg.ms == Ns && cfg.mr == Ns
+    % The delivery block builder already returns the N*Ns effective
+    % channel. Avoid materializing two 3840x3840 identity Kronecker factors
+    % and evaluating I*H*I for the full 8x8/Ns=60 profile.
+    H_eff = H;
+    n_symbols = N * Ns;
+    return;
+end
 if isempty(Wbb)
     Wbb = eye(cfg.mr);
 elseif size(Wbb, 1) ~= cfg.mr

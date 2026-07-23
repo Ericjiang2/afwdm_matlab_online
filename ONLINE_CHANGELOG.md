@@ -45,7 +45,9 @@ without duplicating long notes everywhere.
   and plotting consume that config-derived package instead of redefining them.
 - Two exact speedups avoid redundant work without changing the detector:
   perfect CSI reuses its propagation matrix as the detector matrix, and a CSI
-  group is skipped once all three curves in that group have stopped.
+  group is skipped once all three curves in that group have stopped. The frame
+  kernel also bypasses the no-op `I*H*I` path when the delivery block matrix is
+  already the full effective `N*Ns` channel.
 
 **Why**:
 - The latest 8x8 BER figure showed a large gap between the existing LMMSE
