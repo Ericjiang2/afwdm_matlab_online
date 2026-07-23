@@ -22,7 +22,11 @@ end
 
 verifyEqual(testCase, cfg.array_shape, [8, 8]);
 verifyEqual(testCase, cfg.Nblk, 64);
-verifyEqual(testCase, cfg.SNR_dB_list, -10:5:10);
+verifyEqual(testCase, ...
+    cfg.iso_gabp.average_reference_SNR_dB_list, 0:5:20);
+verifyEqual(testCase, cfg.iso_gabp.reference_stream_count, 60);
+verifyEqual(testCase, cfg.SNR_dB_list, ...
+    (0:5:20) - 10 * log10(60), 'AbsTol', 10 * eps);
 verifyEqual(testCase, cfg.schemes, {'AFWDM', 'DFT_precoded', 'SVD_paper'});
 verifyEqual(testCase, cfg.strategies, {'full'});
 verifyEqual(testCase, cfg.kappa_list, [0, 5e-4], 'AbsTol', eps);
@@ -36,9 +40,9 @@ verifyEqual(testCase, stop.min_frames, 5);
 verifyEqual(testCase, stop.target_errors, 100);
 verifyEqual(testCase, stop.max_frames, 200);
 verifyEqual(testCase, cfg.iso_gabp.runner_version, ...
-    'iso-gabp-adaptive-20260723.2');
+    'iso-gabp-adaptive-20260723.3');
 verifyEqual(testCase, cfg.iso_gabp.assets.active_run_id_file, ...
-    '_ACTIVE_ISO_GABP_SWEEP_V2_ID.txt');
+    '_ACTIVE_ISO_GABP_SWEEP_V3_ID.txt');
 
 detector = cfg.iso_gabp.detector_options;
 verifyEqual(testCase, detector.damping, 0.4, 'AbsTol', eps);
@@ -98,13 +102,18 @@ verifyNotEmpty(testCase, strfind(source, 'state.error_count < stop.target_errors
 verifyNotEmpty(testCase, strfind(source, 'state.frame_count < stop.max_frames'));
 verifyNotEmpty(testCase, strfind(source, 'run_contract'));
 verifyNotEmpty(testCase, strfind(source, 'run_online_iso_gabp_sweep:manifestMismatch'));
-verifyNotEmpty(testCase, strfind(source, 'N_s ~= 60'));
+verifyNotEmpty(testCase, strfind(source, ...
+    'N_s ~= cfg_run.iso_gabp.reference_stream_count'));
 verifyNotEmpty(testCase, strfind(source, 'H_detector = H_real'));
 verifyNotEmpty(testCase, strfind(source, 'states(:, i_csi)'));
 verifyLessThan(testCase, strfind(source, 'plot_iso_gabp_results'), ...
     strfind(source, 'save_final_atomic(final_file, package)'));
 verifyNotEmpty(testCase, strfind(source, ...
     'run_online_iso_gabp_sweep:fixtureIdentity'));
+verifyNotEmpty(testCase, strfind(source, ...
+    'SNR_average_reference_dB'));
+verifyNotEmpty(testCase, strfind(source, ...
+    'SNR_stream_dB'));
 
 kernel_file = fullfile(testCase.TestData.repo_root, ...
     'simulate_imperfect_csi_gabp_frame.m');

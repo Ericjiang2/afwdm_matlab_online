@@ -15,7 +15,7 @@ grid on;
 colors = lines(numel(package.schemes));
 markers = {'o', 's', '^'};
 n_curves = numel(package.schemes) * numel(package.csi_case_labels);
-n_snr = numel(package.SNR_dB);
+n_snr = numel(package.SNR_average_reference_dB);
 legend_text = cell(1, n_curves);
 plotted_values = nan(n_curves * n_snr, 1);
 curve_index = 0;
@@ -34,7 +34,7 @@ for i_csi = 1:numel(package.csi_case_labels)
         plotted(zero_mask(:)) = upper(zero_mask(:));
         destination = (curve_index - 1) * n_snr + (1:n_snr);
         plotted_values(destination) = plotted;
-        semilogy(package.SNR_dB, plotted, ...
+        semilogy(package.SNR_average_reference_dB, plotted, ...
             [line_style markers{i_scheme}], ...
             'Color', colors(i_scheme, :), ...
             'LineWidth', 1.5, ...
@@ -44,7 +44,7 @@ for i_csi = 1:numel(package.csi_case_labels)
     end
 end
 
-xlabel('SNR (dB)');
+xlabel('Average reference SNR, N_s E_s/N_0 (dB)');
 ylabel('BER');
 title(sprintf( ...
     'BER: strict isotropic, 8x8, N_s=%d, GaBP only', package.N_s), ...

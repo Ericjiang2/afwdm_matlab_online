@@ -23,6 +23,40 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260723-03] Move the ISO Sweep to a Common Average-Reference SNR Axis
+
+**Changed**:
+- Changed the plotted strict-ISO grid to common average-reference SNR
+  `[0 5 10 15 20] dB`, defined as `N_s*E_s,stream/N0`.
+- With frozen `N_s=60`, the runner derives the internal per-stream simulation
+  grid as `SNR_stream=SNR_average-10log10(60)`, yielding approximately
+  `[-17.7815 -12.7815 -7.7815 -2.7815 2.2185] dB`.
+- MAT and CSV outputs retain both `SNR_average_reference_dB` and
+  `SNR_stream_dB`; figures use only the common average-reference axis.
+  Checkpoints are named by average-reference SNR.
+- Advanced resume identity to `iso-gabp-adaptive-20260723.3` with
+  `_ACTIVE_ISO_GABP_SWEEP_V3_ID.txt`; v1/v2 artifacts remain immutable history.
+
+**Why**:
+- Under independent unit-power streams, the previous per-stream -5 dB point
+  corresponds to `12.78 dB` common reference SNR and produced BER on the order
+  of `3.4e-4`. The previous 0/5/10 dB per-stream points therefore spent most of
+  the budget far to the right of the informative waterfall.
+- A common `N_s*E_s,stream/N0` axis preserves the extra scheme-dependent
+  received gain in the BER result instead of normalizing each curve by its own
+  measured channel power.
+
+**Expected result and boundary**:
+- This is an axis/noise-grid contract change, not a relabeling of old results.
+  v3 must run from fresh checkpoints. The 20 dB average-reference point maps to
+  `2.2185 dB` per stream and may still reach the 200-frame cap.
+
+**Validation**:
+- The profile contract verifies the exact average grid, 60-stream offset,
+  internal grid, v3 identity, and v3 active file.
+- A bounded `N_s=1` fixture wrote a checkpoint named `snr_avg_p0.mat`, retained
+  both SNR fields in MAT/CSV, and plotted the average-reference axis.
+
 ### [online-20260723-02] Optimize QPSK GaBP and Lower the ISO Minimum to Five Frames
 
 **Changed**:
