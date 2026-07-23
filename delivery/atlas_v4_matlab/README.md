@@ -23,6 +23,30 @@ MATLAB Online 推荐断点续跑入口:
 run('delivery/atlas_v4_matlab/run_delivery_online_resumable.m')
 ```
 
+最新 strict-isotropic 8x8、`N_s=60` 的 GaBP-only 自适应 BER 入口：
+
+```matlab
+addpath('delivery/atlas_v4_matlab');
+package = run_online_iso_gabp_sweep();
+```
+
+该入口只生成 GaBP 的六条曲线：
+`AFWDM / DFT_precoded / SVD_paper` ×
+`perfect CSI / fixed-var CSI (sigma_e^2=5e-4)`。SNR 固定为
+`-10:5:10 dB`，不重跑也不绘制已有 LMMSE 数据。每条曲线独立统计：
+至少 10 帧，累计 100 errors 后停止，最多 200 帧；因此同一 SNR 下六条
+曲线的最终帧数可以不同。每个共享 frame 使用相同信道实现、bits 和单位噪声，
+但 imperfect-CSI 检测器只接收 `H_hat`，真实传播始终使用 `H_real`。
+
+运行按 SNR 保存原子 checkpoint。重复同一命令会读取
+`_ACTIVE_ISO_GABP_SWEEP_ID.txt` 并续跑；配置、代码指纹、Git commit 或 MATLAB
+release 不一致时会明确报 `manifestMismatch`，不会静默拼接数据。最终目录包含
+MAT、逐曲线 CSV 和仅含六条 GaBP 曲线的 PNG。零观测误码点在图中按
+95% rule-of-three 上界 `3/bit_count` 标记，原始 `errors/bits/frames` 仍完整保存。
+方案名、CSI 标签、SNR/停止规则和最终资产文件名只在
+`make_delivery_config("iso_gabp_adaptive")` 中定义；runner、CSV、MAT 和绘图
+均从该配置或其生成的 `package` 读取，避免维护第二套标签。
+
 本次六线时间波形筛查的专用入口:
 
 ```matlab
@@ -192,6 +216,11 @@ PNG，已完成 SNR 点会跳过；最终多 SNR 图会从这些 per-SNR `.mat` 
 - `run_delivery_online_resumable.m`: MATLAB Online 断点续跑 wrapper，BER/low-MIMO 按 SNR 点保存并最后合并主图。
 - `merge_delivery_config.m`: 小型递归配置覆盖 helper，让 Online runner 能指定单个 SNR 和输出目录而不污染主配置表。
 - `plot_delivery_results.m`: 保存 `.png`。
+- `run_online_iso_gabp_sweep.m`: strict-ISO 8x8/`N_s=60` 的 GaBP-only
+  自适应停止、断点续跑和最终打包入口。
+- `plot_iso_gabp_results.m`: 只绘制三种方案 × 两种 CSI 的六条 GaBP 曲线。
+- `../../simulate_imperfect_csi_gabp_frame.m`: 显式分离 `H_real` 传播和
+  `H_detector` GaBP 检测的单帧内核。
 - `pilot_demo_embedded_channel_estimation.m`: 独立 pilot 原型，不进入四张主图。
 
 ## 口径说明

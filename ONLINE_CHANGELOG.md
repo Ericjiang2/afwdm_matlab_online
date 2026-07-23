@@ -23,6 +23,58 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260723-01] Add the Strict-ISO 8x8 GaBP-Only Adaptive Sweep
+
+**Changed**:
+- Added `iso_gabp_adaptive` and `run_online_iso_gabp_sweep()` for the latest
+  strict-isotropic atlas-v4 overlap/nomask contract: `8x8`, `N_s=60`, QPSK,
+  `SNR=-10:5:10 dB`, and `AFWDM / DFT_precoded / SVD_paper`.
+- Added a mismatched-CSI GaBP frame kernel. The transmitted observation uses
+  `H_real`, while the detector uses `H_detector`; all six curves share the
+  frame's physical channel, bits, and unit-noise realization.
+- The output is GaBP-only: perfect CSI and fixed-var
+  `sigma_e^2=5e-4` for each of the three schemes. Existing LMMSE results are
+  neither rerun nor drawn.
+- Each curve stops independently after at least 10 frames when it reaches
+  100 errors, with 200 frames as the hard cap. Per-SNR atomic checkpoints and
+  an immutable run contract prevent incompatible resume. Final artifacts
+  include raw errors/bits/frames, GaBP convergence diagnostics, CSV, MAT, and
+  one six-curve PNG. Zero-error plot markers use the 95% rule-of-three bound.
+- Scheme/CSI labels, sweep/stop parameters, and asset filenames have one
+  executable source of truth in the `iso_gabp_adaptive` config; result writers
+  and plotting consume that config-derived package instead of redefining them.
+- Two exact speedups avoid redundant work without changing the detector:
+  perfect CSI reuses its propagation matrix as the detector matrix, and a CSI
+  group is skipped once all three curves in that group have stopped.
+
+**Why**:
+- The latest 8x8 BER figure showed a large gap between the existing LMMSE
+  curves and short GaBP probes. This runner makes detector choice the only new
+  algorithmic variable while retaining the current channel, spatial schemes,
+  SNR definition, and fixed-variance CSI contract.
+
+**Expected result and boundary**:
+- This commit prepares the MATLAB Online run but does not start the full
+  Monte Carlo. Curves may have different frame counts by design. Any point
+  stopped at 200 frames without 100 errors remains precision-limited and must
+  be interpreted from its raw count or zero-error upper bound.
+
+**Validation**:
+- TDD first failed because the profile, frame kernel, and runner did not exist;
+  the focused MATLAB contract tests then passed 3/3 and confirmed
+  `modes.N_full=60`.
+- The complete delivery suite passes 8/8. The existing time-diversity suite
+  reported 49/49 passed; local MATLAB R2025a then hit a process-teardown
+  segmentation fault after printing the final count, so that crash is treated
+  as an environment shutdown issue rather than a passed clean-exit check.
+- MATLAB Code Analyzer reports zero issues in all five changed/new MATLAB
+  implementation and test files.
+- A real bounded fixture (`N_s=1`, one scheme, perfect CSI, 0 dB, one frame)
+  completed the full runner with `11/128` errors, wrote MAT/CSV/PNG, resumed
+  without recomputation, and rejected a changed-SNR reuse with
+  `run_online_iso_gabp_sweep:manifestMismatch`. This is wiring evidence only,
+  not a scientific BER result.
+
 ### [online-20260718-05] Add the Tau48 Precoding Six-Line Run
 
 **Changed**:
