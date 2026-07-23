@@ -32,9 +32,13 @@ verifyEqual(testCase, cfg.ber_scenarios.pas_model, 'isotropic');
 verifyEmpty(testCase, cfg.quick_stream_cap);
 
 stop = cfg.iso_gabp.stop;
-verifyEqual(testCase, stop.min_frames, 10);
+verifyEqual(testCase, stop.min_frames, 5);
 verifyEqual(testCase, stop.target_errors, 100);
 verifyEqual(testCase, stop.max_frames, 200);
+verifyEqual(testCase, cfg.iso_gabp.runner_version, ...
+    'iso-gabp-adaptive-20260723.2');
+verifyEqual(testCase, cfg.iso_gabp.assets.active_run_id_file, ...
+    '_ACTIVE_ISO_GABP_SWEEP_V2_ID.txt');
 
 detector = cfg.iso_gabp.detector_options;
 verifyEqual(testCase, detector.damping, 0.4, 'AbsTol', eps);

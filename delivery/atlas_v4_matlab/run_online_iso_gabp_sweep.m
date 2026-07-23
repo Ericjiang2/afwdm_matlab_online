@@ -7,7 +7,7 @@ function package = run_online_iso_gabp_sweep(run_id, output_root, cfg_override)
 %
 % The scientific profile is frozen in make_delivery_config:
 % strict isotropic, full atlas-v4 mode set, SNR=-10:5:10 dB, three spatial
-% schemes, perfect/fixed-var CSI, GaBP only, and independent 10/100/200
+% schemes, perfect/fixed-var CSI, GaBP only, and independent 5/100/200
 % frame/error stopping for every scheme x CSI curve.
 
 if nargin < 1

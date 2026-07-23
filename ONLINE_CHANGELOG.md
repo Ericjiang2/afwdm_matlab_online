@@ -23,6 +23,42 @@ without duplicating long notes everywhere.
 
 ## Entries
 
+### [online-20260723-02] Optimize QPSK GaBP and Lower the ISO Minimum to Five Frames
+
+**Changed**:
+- Replaced the four-point enumerated QPSK Gaussian posterior inside GaBP with
+  its exact Cartesian-QPSK `tanh` closed form. Damping `0.4`, tolerance
+  `1e-3`, the 40-iteration cap, channel edges, and hard-decision rule are
+  unchanged.
+- Changed only the strict-ISO GaBP profile minimum from 10 to 5 frames. The
+  100-error target, independent per-curve stop, and 200-frame cap remain.
+- Advanced the immutable identity to `iso-gabp-adaptive-20260723.2` and the
+  active file to `_ACTIVE_ISO_GABP_SWEEP_V2_ID.txt`; v1 checkpoints are
+  preserved but cannot enter the v2 run.
+
+**Why**:
+- Full-load `N_s=60` produces a dense `3840x3840` GaBP graph. Profiling showed
+  that the old QPSK enumeration repeatedly traversed the full message array,
+  while the low-SNR curves already exceeded 100 errors in their first frame.
+  The closed form removes mathematically redundant work, and five frames retain
+  cross-channel averaging while halving the low-SNR minimum budget requested
+  by Eric.
+
+**Expected result and boundary**:
+- This is an exact denoiser implementation change, not a looser convergence
+  claim. Points reaching 40 iterations with residual above `1e-3` remain
+  explicitly nonconverged. The lower five-frame minimum is a new scientific
+  contract and must not be pooled with the v1 partial run.
+
+**Validation**:
+- A randomized posterior test matches the enumerated QPSK mean and variance
+  within `5e-13`; the focused detector/profile contracts pass 9/9.
+- At `N_s=60`, 10 dB, AFWDM/perfect CSI, the same-seed result remains
+  `0/7680`, 16 iterations, while detector time falls from 24.221 s to
+  15.035 s locally (37.9%).
+- At `N_s=60`, -10 dB, the optimized same-seed frame reproduces the returned
+  v1 hard-decision count exactly: `170/7680`, 40 iterations, nonconverged.
+
 ### [online-20260723-01] Add the Strict-ISO 8x8 GaBP-Only Adaptive Sweep
 
 **Changed**:

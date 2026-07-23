@@ -80,7 +80,8 @@ for iteration = 1:opts.max_iterations
     variance_to_denoiser = 1 ./ precision_extrinsic;
     mean_to_denoiser = variance_to_denoiser .* weighted_mean_extrinsic;
 
-    [mu_new, var_new] = qpsk_denoise(mean_to_denoiser, variance_to_denoiser, constellation);
+    [mu_new, var_new] = qpsk_gaussian_denoise( ...
+        mean_to_denoiser, variance_to_denoiser);
     mu_v2o(edge_mask) = (1 - opts.damping) * mu_old(edge_mask) + ...
         opts.damping * mu_new(edge_mask);
     var_v2o(edge_mask) = max(var_new(edge_mask), opts.regularization);
@@ -111,29 +112,8 @@ info.tolerance = opts.tolerance;
 info.edge_threshold_rel = opts.edge_threshold_rel;
 info.edge_count = nnz(edge_mask);
 info.edge_density = info.edge_count / numel(H);
+info.denoiser = 'closed_form_qpsk_gaussian_posterior';
 info.solver = 'damped_gaussian_mp_qpsk';
-end
-
-function [posterior_mean, posterior_variance] = qpsk_denoise(mean_in, variance_in, constellation)
-max_log = -inf(size(mean_in));
-for ii = 1:numel(constellation)
-    log_weight = -abs(constellation(ii) - mean_in).^2 ./ variance_in;
-    max_log = max(max_log, log_weight);
-end
-
-weight_sum = zeros(size(mean_in));
-weighted_symbol = zeros(size(mean_in));
-weighted_energy = zeros(size(mean_in));
-for ii = 1:numel(constellation)
-    weight = exp(-abs(constellation(ii) - mean_in).^2 ./ variance_in - max_log);
-    weight_sum = weight_sum + weight;
-    weighted_symbol = weighted_symbol + weight * constellation(ii);
-    weighted_energy = weighted_energy + weight * abs(constellation(ii))^2;
-end
-weight_sum = max(weight_sum, realmin);
-posterior_mean = weighted_symbol ./ weight_sum;
-posterior_variance = weighted_energy ./ weight_sum - abs(posterior_mean).^2;
-posterior_variance = max(real(posterior_variance), 1e-10);
 end
 
 function symbols = hard_qpsk(means, constellation)

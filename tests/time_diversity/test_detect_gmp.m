@@ -19,6 +19,8 @@ verifyEqual(testCase, qam_demodulate(x_hat, 4), double(bits));
 verifyTrue(testCase, info.converged);
 verifyLessThanOrEqual(testCase, info.iterations, opts.max_iterations);
 verifyEqual(testCase, info.damping, opts.damping);
+verifyEqual(testCase, info.denoiser, ...
+    'closed_form_qpsk_gaussian_posterior');
 end
 
 function testDenseMimoResultIsDeterministicAndComparableToLmmse(testCase)
@@ -69,4 +71,45 @@ function testInvalidDampingFailsExplicitly(testCase)
 opts = struct('damping', 1.2);
 verifyError(testCase, @() detect_gmp(eye(2), ones(2, 1), 1, 4, opts), ...
     'detect_gmp:damping');
+end
+
+function testClosedFormQpskDenoiserMatchesEnumeratedPosterior(testCase)
+rng(20260723, 'twister');
+mean_in = 2 * (randn(13, 17) + 1j * randn(13, 17));
+variance_in = 10 .^ (-3 + 5 * rand(13, 17));
+constellation = qammod((0:3).', 4, ...
+    'UnitAveragePower', true).';
+
+[actual_mean, actual_variance] = qpsk_gaussian_denoise( ...
+    mean_in, variance_in);
+[expected_mean, expected_variance] = enumerated_qpsk_denoise( ...
+    mean_in, variance_in, constellation);
+
+verifyEqual(testCase, actual_mean, expected_mean, 'AbsTol', 5e-13);
+verifyEqual(testCase, actual_variance, expected_variance, 'AbsTol', 5e-13);
+end
+
+function [posterior_mean, posterior_variance] = enumerated_qpsk_denoise( ...
+    mean_in, variance_in, constellation)
+max_log = -inf(size(mean_in));
+for ii = 1:numel(constellation)
+    log_weight = -abs(constellation(ii) - mean_in).^2 ./ variance_in;
+    max_log = max(max_log, log_weight);
+end
+
+weight_sum = zeros(size(mean_in));
+weighted_symbol = zeros(size(mean_in));
+weighted_energy = zeros(size(mean_in));
+for ii = 1:numel(constellation)
+    weight = exp( ...
+        -abs(constellation(ii) - mean_in).^2 ./ variance_in - max_log);
+    weight_sum = weight_sum + weight;
+    weighted_symbol = weighted_symbol + weight * constellation(ii);
+    weighted_energy = weighted_energy + ...
+        weight * abs(constellation(ii))^2;
+end
+weight_sum = max(weight_sum, realmin);
+posterior_mean = weighted_symbol ./ weight_sum;
+posterior_variance = weighted_energy ./ weight_sum - abs(posterior_mean).^2;
+posterior_variance = max(real(posterior_variance), 1e-10);
 end

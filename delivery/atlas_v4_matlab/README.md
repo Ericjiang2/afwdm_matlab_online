@@ -34,18 +34,23 @@ package = run_online_iso_gabp_sweep();
 `AFWDM / DFT_precoded / SVD_paper` ×
 `perfect CSI / fixed-var CSI (sigma_e^2=5e-4)`。SNR 固定为
 `-10:5:10 dB`，不重跑也不绘制已有 LMMSE 数据。每条曲线独立统计：
-至少 10 帧，累计 100 errors 后停止，最多 200 帧；因此同一 SNR 下六条
+至少 5 帧，累计 100 errors 后停止，最多 200 帧；因此同一 SNR 下六条
 曲线的最终帧数可以不同。每个共享 frame 使用相同信道实现、bits 和单位噪声，
 但 imperfect-CSI 检测器只接收 `H_hat`，真实传播始终使用 `H_real`。
 
 运行按 SNR 保存原子 checkpoint。重复同一命令会读取
-`_ACTIVE_ISO_GABP_SWEEP_ID.txt` 并续跑；配置、代码指纹、Git commit 或 MATLAB
+`_ACTIVE_ISO_GABP_SWEEP_V2_ID.txt` 并续跑；配置、代码指纹、Git commit 或 MATLAB
 release 不一致时会明确报 `manifestMismatch`，不会静默拼接数据。最终目录包含
 MAT、逐曲线 CSV 和仅含六条 GaBP 曲线的 PNG。零观测误码点在图中按
 95% rule-of-three 上界 `3/bit_count` 标记，原始 `errors/bits/frames` 仍完整保存。
 方案名、CSI 标签、SNR/停止规则和最终资产文件名只在
 `make_delivery_config("iso_gabp_adaptive")` 中定义；runner、CSV、MAT 和绘图
 均从该配置或其生成的 `package` 读取，避免维护第二套标签。
+
+v2 使用与四点枚举数学等价的闭式 QPSK Gaussian posterior，避免每次 GaBP
+迭代对四个星座点执行多轮全矩阵 `exp`。`max_iterations=40` 和
+`tolerance=1e-3` 未改变。旧 v1 active-id/checkpoint 保留为历史，但不能被
+v2 续跑；升级后直接重新执行入口会创建新的 v2 run id。
 
 本次六线时间波形筛查的专用入口:
 
